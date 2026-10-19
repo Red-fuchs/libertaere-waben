@@ -1,0 +1,2825 @@
+<!DOCTYPE html>
+<html lang="de">
+<head><script type="application/json" data-od-external-dependencies>["https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@400;500;600&display=swap"]</script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Friendly Society — Interaktive Waben</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ═══ DESIGN-TOKENS — Ancap: Schwarz/Gold, ruhig, präzise ═══ */
+:root{
+  --bg:#09090a;
+  --bg-2:#0f0f11;
+  --panel:#0c0c0d;
+  --ink:#ece6d8;
+  --ink-2:#a9a293;
+  --muted:#6f6a60;
+  --gold:#d4b062;
+  --gold-hi:#ecd08c;
+  --gold-lo:#8a6d2c;
+  --line:rgba(212,176,98,.16);
+  --line-2:rgba(212,176,98,.32);
+  --ease:cubic-bezier(.22,.8,.24,1);
+  --font-display:'Cormorant Garamond',Georgia,serif;
+  --font-body:'IBM Plex Sans Condensed','Arial Narrow',sans-serif;
+  --font-mono:'IBM Plex Mono',ui-monospace,monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;}
+body{
+  background:var(--bg);
+  color:var(--ink);
+  font-family:var(--font-body);
+  line-height:1.5;
+  overflow:hidden;
+  -webkit-font-smoothing:antialiased;
+}
+/* Statisches Hex-Raster + Vignette statt Sternenfeld */
+.backdrop{
+  position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:
+    radial-gradient(ellipse 70% 60% at 50% 45%, rgba(212,176,98,.07) 0%, transparent 60%),
+    radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,.65) 100%),
+    var(--bg);
+}
+.backdrop::after{
+  content:"";position:absolute;inset:0;opacity:.05;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='104' viewBox='0 0 60 104'%3E%3Cpath d='M15 0h30l15 26-15 26H15L0 26zM15 52h30l15 26-15 26H15L0 78z' fill='none' stroke='%23d4b062' stroke-width='.6'/%3E%3C/svg%3E");
+  background-size:60px 104px;
+  mask-image:radial-gradient(ellipse at center, #000 20%, transparent 75%);
+}
+
+.container{position:relative;z-index:1;height:100vh;display:flex;flex-direction:column;}
+
+header{
+  padding:22px 36px 18px;
+  display:flex;align-items:flex-end;justify-content:space-between;gap:24px;flex-wrap:wrap;
+  border-bottom:1px solid var(--line);
+  flex-shrink:0;
+}
+.eyebrow{
+  display:flex;align-items:center;gap:10px;
+  font-family:var(--font-mono);font-size:10.5px;letter-spacing:.26em;text-transform:uppercase;
+  color:var(--gold);margin-bottom:8px;
+}
+/* Ancap-Flagge als Mini-Marke: diagonal Schwarz/Gold */
+.flag{width:14px;height:14px;flex-shrink:0;border:1px solid var(--gold);background:linear-gradient(to bottom right,var(--gold) 0 50%,#000 50% 100%);}
+header h1{
+  font-family:var(--font-display);
+  font-size:clamp(30px,3.6vw,46px);
+  font-weight:600;line-height:1;letter-spacing:.01em;
+  color:var(--ink);
+}
+header h1 em{font-style:italic;font-weight:500;color:var(--gold);}
+header .lead{color:var(--ink-2);margin-top:8px;max-width:520px;font-size:14.5px;}
+
+/* ═══ KOPF: Titel | Suche + Pfad ═══ */
+header .tools{display:flex;flex-direction:column;align-items:flex-end;gap:12px;min-width:0;}
+
+.search{position:relative;width:min(360px,100%);}
+.search-field{
+  display:flex;align-items:center;gap:10px;height:40px;padding:0 12px;
+  background:rgba(255,255,255,.02);border:1px solid var(--line-2);
+  transition:border-color .2s,background .2s;
+}
+.search-field:focus-within{border-color:var(--gold);background:rgba(212,176,98,.04);}
+.search-field svg{flex-shrink:0;color:var(--gold-lo);}
+.search-field:focus-within svg{color:var(--gold);}
+.search input{
+  flex:1;min-width:0;height:100%;background:none;border:none;outline:none;
+  color:var(--ink);font:400 15px var(--font-body);letter-spacing:.02em;
+}
+.search input::placeholder{color:var(--muted);}
+.search input::-webkit-search-cancel-button{display:none;}
+.search kbd{
+  font:500 10px var(--font-mono);color:var(--muted);letter-spacing:.06em;
+  border:1px solid var(--line);padding:2px 6px;white-space:nowrap;
+}
+.search-field:focus-within kbd{display:none;}
+.search-clear{display:none;background:none;border:none;color:var(--muted);font-size:18px;line-height:1;cursor:pointer;padding:0 2px;}
+.search.has-q .search-clear{display:block;}
+.search-results{
+  position:absolute;top:calc(100% + 6px);left:0;right:0;z-index:400;
+  max-height:min(420px,60vh);overflow-y:auto;list-style:none;
+  background:#0e0e10;border:1px solid var(--line-2);
+  box-shadow:0 18px 40px rgba(0,0,0,.6);
+  display:none;
+}
+.search.open .search-results{display:block;}
+.search-results li{
+  display:grid;grid-template-columns:8px 1fr;gap:4px 12px;align-items:center;
+  padding:10px 14px;cursor:pointer;border-bottom:1px solid rgba(212,176,98,.07);
+}
+.search-results li:last-child{border-bottom:none;}
+.search-results li::before{content:"";width:8px;height:8px;background:var(--c,var(--gold));clip-path:polygon(25% 0,75% 0,100% 50%,75% 100%,25% 100%,0 50%);}
+.search-results li.sel{background:rgba(212,176,98,.08);}
+.search-results .r-label{font-size:15px;color:var(--ink);}
+.search-results .r-path{grid-column:2;font:400 10px var(--font-mono);letter-spacing:.12em;text-transform:uppercase;color:var(--muted);}
+.search-results .r-hit{grid-column:2;font-size:12.5px;color:var(--ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.search-results mark{background:none;color:var(--gold-hi);border-bottom:1px solid var(--gold-lo);}
+.search-results .r-empty{display:block;color:var(--muted);font-size:14px;cursor:default;}
+.search-results .r-empty::before{display:none;}
+
+.breadcrumb{
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end;
+  font-family:var(--font-mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--muted);
+}
+.breadcrumb .sep{color:var(--gold-lo);}
+.breadcrumb .crumb{cursor:pointer;transition:color .2s;white-space:nowrap;}
+.breadcrumb .crumb:hover{color:var(--gold-hi);}
+.breadcrumb .crumb.active{color:var(--gold);cursor:default;}
+
+.workspace{display:flex;flex:1;min-height:0;overflow:hidden;}
+.honeycomb-wrap{flex:1;position:relative;overflow:hidden;min-height:0;padding:24px;}
+.honeycomb{position:relative;width:100%;height:100%;}
+
+/* HUD-Ecken — einziger Sci-Fi-Akzent */
+.corner-deco{position:absolute;width:18px;height:18px;border:1px solid var(--gold);opacity:.35;pointer-events:none;}
+.corner-deco.tl{top:16px;left:16px;border-right:none;border-bottom:none;}
+.corner-deco.tr{top:16px;right:16px;border-left:none;border-bottom:none;}
+.corner-deco.bl{bottom:16px;left:16px;border-right:none;border-top:none;}
+.corner-deco.br{bottom:16px;right:16px;border-left:none;border-top:none;}
+.hud{position:absolute;bottom:18px;left:44px;font-family:var(--font-mono);font-size:10px;letter-spacing:.2em;color:var(--muted);text-transform:uppercase;pointer-events:none;}
+
+/* ═══ WABE ═══
+   Position: left/top = Gitterpunkt. Bewegung nur über --dx/--dy/--s,
+   damit Hover, Ein- und Ausblenden eine einzige Transition teilen. */
+.hex{
+  --c:var(--gold);
+  --cm:color-mix(in oklab,var(--c) 72%,#c8b78a);
+  --dx:0px;--dy:0px;--s:1;
+  position:absolute;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  text-align:center;
+  background:none;border:none;padding:0;
+  color:var(--ink);
+  font-family:var(--font-body);font-weight:500;text-transform:uppercase;letter-spacing:.06em;line-height:1.25;
+  cursor:pointer;z-index:1;
+  transform:translate(-50%,-50%) translate(var(--dx),var(--dy)) scale(var(--s));
+  transition:transform .42s var(--ease), opacity .35s ease;
+  will-change:transform;
+  -webkit-tap-highlight-color:transparent;
+}
+.hex svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible;}
+.hex .fill{fill:url(#hexGrad);transition:fill-opacity .3s;}
+.hex .tint{fill:var(--cm);fill-opacity:.05;transition:fill-opacity .3s;}
+.hex .edge{fill:none;stroke:var(--cm);stroke-opacity:.38;stroke-width:1;vector-effect:non-scaling-stroke;transition:stroke-opacity .3s;}
+.hex .inner{fill:none;stroke:var(--gold);stroke-opacity:0;stroke-width:1;vector-effect:non-scaling-stroke;transition:stroke-opacity .3s;}
+.hex .tick{stroke:var(--cm);stroke-width:2;vector-effect:non-scaling-stroke;opacity:.85;}
+.hex-text{position:relative;z-index:2;pointer-events:none;padding:0 16%;text-wrap:balance;hyphens:manual;overflow-wrap:normal;}
+.hex-meta{
+  position:relative;z-index:2;pointer-events:none;margin-top:.7em;
+  font-family:var(--font-mono);font-size:.72em;letter-spacing:.14em;color:var(--cm);opacity:.75;
+}
+
+.hex-meta .link-ico{position:static;display:inline-block;width:1.5em;height:.6em;margin-right:.35em;vertical-align:middle;fill:none;stroke:currentColor;stroke-width:1.2;}
+.hex.is-hover{z-index:10;}
+.hex.is-hover .edge{stroke-opacity:1;}
+.hex.is-hover .tint{fill-opacity:.14;}
+.honeycomb.has-hover .hex:not(.is-hover){opacity:.62;}
+
+/* Zentrum = aktuelle Ebene */
+.hex.center{--c:var(--gold);color:var(--ink);}
+.hex.center .hex-text{font-family:var(--font-display);font-weight:600;text-transform:none;letter-spacing:.01em;line-height:1.05;}
+.hex.center .edge{stroke-opacity:.8;}
+.hex.center .inner{stroke-opacity:.35;}
+.hex.center .tint{fill-opacity:.09;}
+
+/* Ausgewählt */
+.hex.active .inner{stroke:var(--cm);stroke-opacity:.9;}
+.hex.active .edge{stroke-opacity:1;}
+.hex.active .tint{fill-opacity:.16;}
+
+.hex:focus-visible{outline:none;}
+.hex:focus-visible .edge{stroke:var(--gold-hi);stroke-opacity:1;stroke-width:2;}
+
+.hex.out{opacity:0;--s:.88;pointer-events:none;transition-duration:.24s;}
+.hex.enter{opacity:0;transition:none;}
+
+/* ═══ SEITENPANEL ═══ */
+.side{
+  width:380px;flex-shrink:0;overflow-y:auto;
+  background:linear-gradient(180deg,var(--bg-2),var(--panel));
+  border-left:1px solid var(--line);
+}
+.side .head{
+  position:sticky;top:0;z-index:2;
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding:18px 26px;border-bottom:1px solid var(--line);
+  background:var(--bg-2);
+}
+.side .head .label{font-family:var(--font-mono);font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:var(--muted);}
+.side .head .close{
+  width:32px;height:32px;display:flex;align-items:center;justify-content:center;
+  background:none;border:1px solid var(--line-2);color:var(--ink-2);font-size:18px;line-height:1;cursor:pointer;
+  transition:all .2s;
+}
+.side .head .close:hover{border-color:var(--gold);color:var(--gold-hi);}
+.side .body{padding:28px 26px 36px;}
+.side .body h2{font-family:var(--font-display);font-size:32px;font-weight:600;line-height:1.05;color:var(--ink);margin-bottom:8px;}
+.side .body .sub{display:flex;align-items:center;gap:10px;font-family:var(--font-display);font-style:italic;font-size:18px;color:var(--gold);margin-bottom:20px;}
+.side .body .sub::before{content:"";width:22px;height:1px;background:var(--c,var(--gold));}
+.side .body .desc{color:var(--ink-2);font-size:15.5px;line-height:1.7;margin-bottom:26px;}
+.side .body .meta{display:grid;grid-template-columns:1fr 1fr;gap:16px;padding-top:20px;border-top:1px solid var(--line);}
+.side .k{font-family:var(--font-mono);font-size:9.5px;letter-spacing:.22em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;}
+.side .v{font-size:15px;font-weight:500;color:var(--ink);}
+.side .children-list{margin-top:24px;padding-top:20px;border-top:1px solid var(--line);}
+.child-tag{
+  display:inline-flex;align-items:center;gap:8px;
+  padding:5px 12px;margin:0 6px 7px 0;
+  border:1px solid var(--line);background:rgba(255,255,255,.015);
+  font-size:13px;color:var(--ink-2);cursor:pointer;transition:all .2s;
+}
+.child-tag::before{content:"";width:6px;height:6px;background:var(--c,var(--gold));clip-path:polygon(25% 0,75% 0,100% 50%,75% 100%,25% 100%,0 50%);}
+.child-tag:hover{border-color:var(--line-2);color:var(--ink);background:rgba(212,176,98,.06);}
+.side .section{margin-top:24px;padding-top:20px;border-top:1px solid var(--line);}
+.examples{list-style:none;}
+.examples li{position:relative;padding-left:18px;margin-bottom:10px;color:var(--ink-2);font-size:14.5px;line-height:1.6;}
+.examples li::before{content:"";position:absolute;left:0;top:.62em;width:8px;height:1px;background:var(--gold);}
+.sources{list-style:none;}
+.sources li{font:400 11.5px/1.55 var(--font-mono);color:var(--muted);margin-bottom:6px;}
+.sources a{color:var(--ink-2);text-decoration:none;border-bottom:1px solid var(--line-2);}
+.sources a:hover{color:var(--gold-hi);}
+.prax{display:block;text-decoration:none;padding:10px 0 10px 16px;border-left:1px solid var(--line-2);margin-bottom:10px;transition:border-color .2s;}
+.prax:hover{border-left-color:var(--gold);}
+.prax-t{display:block;color:var(--ink-2);font-size:14.5px;line-height:1.6;}
+.prax-ep{display:block;margin-top:4px;font:500 10px var(--font-mono);letter-spacing:.14em;text-transform:uppercase;color:var(--gold);}
+.wiki-link{display:inline-block;margin:0 0 18px;font:500 10px var(--font-mono);letter-spacing:.16em;text-transform:uppercase;color:var(--gold);text-decoration:none;border-bottom:1px solid var(--gold-lo);padding-bottom:2px;}
+.wiki-link:hover{color:var(--gold-hi);}
+.objection{border-left:1px solid var(--gold-lo);padding:2px 0 2px 16px;margin-bottom:14px;}
+.objection .q{font-family:var(--font-display);font-style:italic;font-size:19px;line-height:1.3;color:var(--ink);margin-bottom:6px;}
+.objection .q::before{content:"„";color:var(--gold);}
+.objection .q::after{content:"“";color:var(--gold);}
+.objection .a{font-size:14.5px;line-height:1.65;color:var(--ink-2);}
+.links{list-style:none;}
+.links li{margin-bottom:8px;}
+.links a{display:flex;gap:10px;align-items:baseline;color:var(--ink);text-decoration:none;font-size:14.5px;}
+.links a span{font:500 9px var(--font-mono);letter-spacing:.16em;text-transform:uppercase;color:var(--gold);flex:0 0 62px;}
+.links a:hover{color:var(--gold-hi);}
+
+/* Export */
+.tool-btn{
+  position:absolute;bottom:14px;right:44px;z-index:50;
+  display:flex;align-items:center;gap:8px;
+  background:rgba(9,9,10,.85);border:1px solid var(--line-2);color:var(--ink-2);
+  font:500 10px var(--font-mono);letter-spacing:.18em;text-transform:uppercase;
+  padding:8px 12px;cursor:pointer;transition:border-color .2s,color .2s;
+}
+.tool-btn:hover{border-color:var(--gold);color:var(--gold-hi);}
+.child-tag small{font:400 9px var(--font-mono);letter-spacing:.14em;text-transform:uppercase;color:var(--muted);}
+
+/* Querverbindung zur Hover-Wabe auf derselben Ebene */
+.honeycomb.has-hover .hex.is-related{opacity:1;}
+.hex.is-related .edge{stroke:var(--gold);stroke-opacity:.9;stroke-dasharray:4 3;}
+.hex.flash .inner{stroke:var(--gold-hi);animation:flash 1.1s ease 2;}
+@keyframes flash{50%{stroke-opacity:1;stroke-width:3;}}
+
+.side .empty{text-align:center;padding:48px 26px;color:var(--muted);}
+.side .empty svg{width:28px;height:28px;margin:0 auto 12px;stroke:var(--gold-lo);fill:none;stroke-width:1.2;}
+.side .empty p{font-size:14px;}
+
+.back-btn{
+  position:absolute;top:24px;left:44px;z-index:50;
+  display:flex;align-items:center;gap:8px;
+  background:rgba(9,9,10,.85);border:1px solid var(--line-2);color:var(--ink-2);
+  font-family:var(--font-mono);font-size:10.5px;letter-spacing:.18em;text-transform:uppercase;
+  padding:9px 16px;cursor:pointer;
+  opacity:0;pointer-events:none;transform:translateX(-8px);
+  transition:opacity .3s,transform .3s var(--ease),border-color .2s,color .2s;
+}
+.back-btn.visible{opacity:1;pointer-events:auto;transform:none;}
+.back-btn:hover{border-color:var(--gold);color:var(--gold-hi);}
+
+@media (prefers-reduced-motion:reduce){.hex{transition:opacity .2s;}}
+
+@media(max-width:960px){
+  .workspace{flex-direction:column;}
+  .honeycomb-wrap{flex:1 1 auto;padding:12px;}
+  .side{
+    position:fixed;left:0;right:0;bottom:0;width:100%;max-height:55vh;z-index:200;
+    border-left:none;border-top:1px solid var(--line-2);
+    transform:translateY(calc(100% - 52px));transition:transform .35s var(--ease);
+  }
+  .side.open{transform:none;}
+  .side .empty{padding:16px;}
+  .side .empty svg{display:none;}
+  .side .body{padding:20px 18px 28px;}
+  .side .body h2{font-size:26px;}
+  header{padding:12px 16px 10px;flex-direction:column;align-items:stretch;gap:10px;}
+  header .tools{align-items:stretch;gap:8px;}
+  .search{width:100%;}
+  .search kbd{display:none;}
+  .search-results{max-height:50vh;}
+  .breadcrumb{justify-content:flex-start;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;}
+  .breadcrumb::-webkit-scrollbar{display:none;}
+  header .lead{font-size:13px;}
+  .back-btn{top:12px;left:16px;padding:7px 12px;}
+  .hud{display:none;}
+  .tool-btn{bottom:64px;right:16px;}
+  .eyebrow{font-size:9px;letter-spacing:.16em;}
+}
+@media(max-width:480px){
+  header .lead{display:none;}
+  .breadcrumb{font-size:9.5px;gap:6px;}
+  .corner-deco{display:none;}
+}
+</style>
+</head>
+<body>
+
+<div class="backdrop"></div>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <linearGradient id="hexGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#17161a"/>
+      <stop offset="1" stop-color="#0c0c0e"/>
+    </linearGradient>
+  </defs>
+</svg>
+
+<div class="container">
+<header data-od-id="page-header">
+  <div class="title-block">
+    <div class="eyebrow"><span class="flag" aria-hidden="true"></span>Alternative zum Sozialstaat · Libertär</div>
+    <h1>Friendly <em>Society</em></h1>
+    <p class="lead">Freiwillig statt verordnet. Wähle eine Wabe, um ihre Verbindungen zu öffnen.</p>
+  </div>
+  <div class="tools">
+    <div class="search" id="search" role="search" data-od-id="search">
+      <label class="search-field">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        <input id="searchInput" type="search" placeholder="Waben durchsuchen …" autocomplete="off" spellcheck="false"
+               role="combobox" aria-expanded="false" aria-controls="searchResults" aria-label="Waben durchsuchen">
+        <button class="search-clear" id="searchClear" type="button" aria-label="Suche leeren">×</button>
+        <kbd>⌘ K</kbd>
+      </label>
+      <ul class="search-results" id="searchResults" role="listbox"></ul>
+    </div>
+    <nav class="breadcrumb" id="breadcrumb" data-od-id="breadcrumb">
+      <span class="crumb active" data-level="root">Übersicht</span>
+    </nav>
+  </div>
+</header>
+
+<div class="workspace">
+  <div class="honeycomb-wrap" data-od-id="honeycomb-area">
+    <div class="corner-deco tl"></div>
+    <div class="corner-deco tr"></div>
+    <div class="corner-deco bl"></div>
+    <div class="corner-deco br"></div>
+    <div class="hud" id="hud"></div>
+
+    <button class="back-btn" id="backBtn" data-od-id="back-button">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+      Zurück
+    </button>
+
+    <button class="tool-btn" id="exportBtn" title="Aktuelle Ebene als Bild (1080 × 1350) speichern">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12M7 10l5 5 5-5M4 21h16"/></svg>
+      PNG
+    </button>
+
+    <div class="honeycomb" id="honeycomb" role="list"></div>
+  </div>
+
+  <aside class="side" id="side" aria-live="polite" data-od-id="side-panel">
+    <div id="side-content"></div>
+  </aside>
+</div>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════
+   ║  FRIENDLY SOCIETY — HIVE DATA (NOOB-EDIT-BEREICH)          ║
+   ║                                                              ║
+   ║  SO FÜGST DU NEUE WABEN HINZU:                              ║
+   ║  1. Erstelle einen neuen Eintrag in HIVE.nodes              ║
+   ║  2. Gib der Wabe eine eindeutige ID (z.B. "meine-wabe")    ║
+   ║  3. Setze label, subtitle, desc (Beschreibung)              ║
+   ║  4. Optional: color (Hex-Farbe, z.B. "#ff6600")            ║
+   ║  5. Füge die ID in die "children"-Liste der Parent-Wabe ein  ║
+   ║                                                              ║
+   ║  BEISPIEL — neue Wabe "meine-wabe" unter "bildung":        ║
+   ║    1. Kopiere einen vorhandenen Block, z.B. "winkelschulen" ║
+   ║    2. Ändere die ID und den Inhalt                           ║
+   ║    3. Gehe zur "bildung"-Wabe und füge "meine-wabe" zu      ║
+   ║       children hinzu: children: [... , "meine-wabe"]          ║
+   ║                                                              ║
+   ║  TIEFE HIERARCHIE:                                           ║
+   ║  Du kannst beliebig tief verschachteln:                     ║
+   ║    bildung → winkelschulen → winkelschulen-geschichte       ║
+   ║  Einfach der Unter-Wabe wieder children geben!              ║
+   ═══════════════════════════════════════════════════════════════ */
+
+const HIVE = {
+  nodes: {
+    // ═══ MASTER / ROOT ═══
+    "friendly-society": {
+      id: "friendly-society",
+      label: "Friendly<br>Society",
+      subtitle: "Das libertäre Netzwerk",
+      desc: "Die Friendly Society ist das Herzstück des alternativen Sozialstaats: Ein freiwilliges, dezentrales Netzwerk aus Familie, Freunden, Genossenschaften, Versicherungen und karitativen Einrichtungen. Ohne Zwang, ohne Steuern, ohne Bürokratie.",
+      color: "#d4a017",
+      meta: { Reichweite: "6–9 Mio. Mitglieder (GB, 1910)", Trägerschaft: "Freiwillig / Gegenseitig" },
+      children: ["bildung", "gesundheit", "sicherheit", "infrastruktur", "oekonomie", "recht"]
+    },
+
+    // ═══ KATEGORIEN (Ebene 1) ═══
+    "bildung": {
+      id: "bildung",
+      label: "Bildung",
+      subtitle: "Freie Bildungslandschaft",
+      desc: "Bildung jenseits des staatlichen Zwangsmonopols — von Winkelschulen über Homeschooling bis zu privaten Hochschulen und digitalen Plattformen.",
+      color: "#f59e0b",
+      meta: { Reichweite: "England vor 1870: privat & kirchlich", Trägerschaft: "Eltern / Privat / Karitativ" },
+      children: ["winkelschulen", "freie-schulen", "internet-lernen", "homeschooling",
+                  "bildungsmarkt", "foerderung", "karitativ-bildung", "industrie-uni",
+                  "gilden", "broadcast", "fernstudium", "privat-uni"]
+    },
+    "gesundheit": {
+      id: "gesundheit",
+      label: "Gesundheit",
+      subtitle: "Freie Gesundheitsversorgung",
+      desc: "Alternative zum staatlichen Gesundheitssystem: Private Versicherungen, freie Medikamentenmärkte, Reputationssysteme für Krankenhäuser und marktgetriebene Prävention.",
+      color: "#ef4444",
+      meta: { Reichweite: "Lodge Practice, USA bis in die 1920er", Trägerschaft: "Gegenseitigkeitsvereine / Privat" },
+      children: ["private-versicherung", "bessere-ernaehrung", "medikamentenmarkt",
+                  "private-krankenhaeuser", "praevention", "heilmarkt",
+                  "abomodell", "freerider"]
+    },
+    "sicherheit": {
+      id: "sicherheit",
+      label: "Sicherheit",
+      subtitle: "Alternative zum Gewaltmonopol",
+      desc: "Sicherheit ohne staatliches Gewaltmonopol: Private Sicherheitsdienste, Bürgerwehren, Versicherungen als Ordnungsfaktor und das freie Waffenrecht als ultimativer Selbstschutz.",
+      color: "#3b82f6",
+      meta: { Reichweite: "Island 930–1262 ohne Staatspolizei", Trägerschaft: "Privat / Dezentral" },
+      children: ["private-security", "chaostheorie", "versicherungen-si",
+                  "privatdetektei", "buergerwehr", "journalismus",
+                  "truther", "private-polizei", "anzeigen", "waffenrecht"]
+    },
+    "infrastruktur": {
+      id: "infrastruktur",
+      label: "Infrastruktur",
+      subtitle: "Straßen ohne Staat",
+      desc: "Aber wer baut ohne Staat die Straßen? Die Antwort: Jeder, der sie braucht. Private Hand, Industrie, Händler, Versicherungen und Notdienste haben alle ein intrinsisches Interesse an guter Infrastruktur.",
+      color: "#10b981",
+      meta: { Reichweite: "Turnpikes, England 18.–19. Jh.", Trägerschaft: "Anlieger / Unternehmen" },
+      children: ["private-hand", "industrie-infra", "befoerderung",
+                  "sicherheit-infra", "notdienste", "versicherungen-infra",
+                  "haendler", "fazit"]
+    },
+    "oekonomie": {
+      id: "oekonomie",
+      label: "Ökonomie",
+      subtitle: "Alternativen zum Sozialismus",
+      desc: "Freier Markt, freiwillige Arbeitsteilung, private Produktionsmittel und die subjektive Wertlehre: Die ökonomische Alternative zum Planwirtschafts-Paradigma.",
+      color: "#f97316",
+      meta: { Reichweite: "Free Banking, Schottland bis 1845", Trägerschaft: "Freier Markt" },
+      children: ["freier-geldmarkt", "freier-handel", "arbeitsteilung",
+                  "abwesenheit-staat", "produktionsmittel", "private-haftung",
+                  "kontaktnetzwerke", "deflation", "konsumentenschutz",
+                  "subjektive-wert", "grenznutzen", "angebot-nachfrage"]
+    },
+    "recht": {
+      id: "recht",
+      label: "Recht",
+      subtitle: "Alternativen zum staatlichen System",
+      desc: "Recht ohne Staat: Common Law, private Schiedsgerichte, Gilden-Ordnungen und das Reputationssystem als ultimativer sozialer Regulator.",
+      color: "#8b5cf6",
+      meta: { Reichweite: "Lex Mercatoria seit dem Mittelalter", Trägerschaft: "Händlergerichte / Schiedsstellen" },
+      children: ["common-law", "gilden-orden", "schiedsgerichte",
+                  "eigentumsrecht", "reputation", "scherbengericht",
+                  "diskriminierung", "sanktionierung", "verbannung"]
+    },
+
+    // ═══ BILDUNG — Unterwaben (Ebene 2) ═══
+    "winkelschulen": {
+      id: "winkelschulen",
+      label: "Winkel-<br>schulen",
+      subtitle: "Private Schulen von unten",
+      desc: "Winkelschulen (auch Klipp- oder Heckschulen) waren nicht anerkannte, privat organisierte Elementarschulen mit Schulgeld, belegt seit dem späten Mittelalter. Eltern bezahlten die Lehrer direkt; den abwertenden Namen gaben ihnen Schulreformer im 16. Jahrhundert.",
+      color: "#8b5cf6",
+      meta: { Reichweite: "Lokal", Trägerschaft: "Privat / Eltern" },
+      children: []
+    },
+    "freie-schulen": {
+      id: "freie-schulen",
+      label: "Freie<br>Schulen / MINT",
+      subtitle: "Bürgerliche Bildung",
+      desc: "Freie, bürgerliche Schulen legen den Fokus auf MINT-Fächer und individuelle Förderung jenseits staatlicher Lehrpläne. Eltern entscheiden über Inhalt und Qualität.",
+      color: "#8b5cf6",
+      meta: { Reichweite: "Wachsend", Trägerschaft: "Privat / Eltern" },
+      children: []
+    },
+    "internet-lernen": {
+      id: "internet-lernen",
+      label: "Internet /<br>Lernen",
+      subtitle: "Digitale Plattformen",
+      desc: "Im Internet ist Bildung kostenlos verfügbar: Khan Academy, YouTube, MOOCs und KI-gestützte Lernassistenten demokratisieren den Zugang zu Wissen weltweit.",
+      color: "#8b5cf6",
+      meta: { Reichweite: "Sehr hoch", Trägerschaft: "Plattformen / Open Source" },
+      children: []
+    },
+    "homeschooling": {
+      id: "homeschooling",
+      label: "Freilerner /<br>Homeschooling",
+      subtitle: "Individuelles Lernen",
+      desc: "Kinder fragen immer warum — Freilerner folgen dieser Neugier. Eltern oder Lernbegleiter unterrichten eigenverantwortlich, projektbasiert und in flexiblem Tempo.",
+      color: "#8b5cf6",
+      meta: { Reichweite: "Wachsend", Trägerschaft: "Privat / Familie" },
+      children: []
+    },
+    "bildungsmarkt": {
+      id: "bildungsmarkt",
+      label: "Bildungs-<br>markt",
+      subtitle: "Kommerzieller Sektor",
+      desc: "Der Bildungsmarkt bündelt kommerzielle Anbieter: Nachhilfeinstitute, Sprachschulen, Coaching-Dienste, private Lernzentren und Bildungsverlage als Ergänzung.",
+      color: "#8b5cf6",
+      meta: { Reichweite: "Mittel", Trägerschaft: "Privatwirtschaftlich" },
+      children: []
+    },
+    "foerderung": {
+      id: "foerderung",
+      label: "Individuelle<br>Förderung",
+      subtitle: "Karitative Unterstützung",
+      desc: "Eltern kennen ihre Kinder am besten — mit weniger Steuern und mehr eigenen Mitteln können sie Bildung gezielt und individuell fördern, statt in staatliche Kassen zu zahlen.",
+      color: "#8b5cf6",
+      meta: { Reichweite: "Selektiv", Trägerschaft: "Stiftungen / Vereine" },
+      children: []
+    },
+    "karitativ-bildung": {
+      id: "karitativ-bildung",
+      label: "Karitative<br>Förderung",
+      subtitle: "Gemeinnützige Hilfe",
+      desc: "Mehr Mittel für freiwillige Förderung stehen zur Verfügung: Humanitäre Organisationen bieten Alphabetisierung bis Berufsqualifizierung, oft kostenfrei oder subventioniert.",
+      color: "#8b5cf6",
+      meta: { Reichweite: "Regional", Trägerschaft: "Gemeinnützig" },
+      children: []
+    },
+    "industrie-uni": {
+      id: "industrie-uni",
+      label: "Industrie-<br>universitäten",
+      subtitle: "Berufsnahe Hochschulen",
+      desc: "Firmen haben eigene Unis und Ausbildungsstätten für spezialisierte Berufe. Studierende lernen in enger Verzahnung mit Unternehmen, Forschungslaboren und angewandten Projekten.",
+      color: "#8b5cf6",
+      meta: { Reichweite: "Spezialisiert", Trägerschaft: "Industrie / Hochschulen" },
+      children: []
+    },
+    "gilden": {
+      id: "gilden",
+      label: "Gilden /<br>Ausbildung",
+      subtitle: "Handwerk & Tradition",
+      desc: "Gilden und Innungen pflegen handwerkliche und künstlerische Tradition. Sie strukturieren die berufliche Ausbildung in klaren Lehrjahren, Gesellenstücken und Meisterprüfungen.",
+      color: "#8b5cf6",
+      meta: { Reichweite: "Stabil", Trägerschaft: "Berufsständisch" },
+      children: []
+    },
+    "broadcast": {
+      id: "broadcast",
+      label: "Broadcast /<br>Bildungs-TV",
+      subtitle: "Klassische Medien",
+      desc: "Bildung auch auf alten Medien vorhanden — von der Sendung mit der Maus bis zu Vortragsreihen. Linear gesendete Formate erreichen breite Zuschauergruppen ohne Internet.",
+      color: "#8b5cf6",
+      meta: { Reichweite: "Hoch", Trägerschaft: "Öffentlich-rechtlich" },
+      children: []
+    },
+    "fernstudium": {
+      id: "fernstudium",
+      label: "Fern-<br>studium",
+      subtitle: "Distance Learning",
+      desc: "Fernstudiengänge ermöglichen berufsbegleitende Qualifizierung. Lernmaterial, Prüfungen und Betreuung sind auf orts- und zeitunabhängige Teilnahme ausgelegt.",
+      color: "#8b5cf6",
+      meta: { Reichweite: "Wachsend", Trägerschaft: "Hochschulen / Akademien" },
+      children: []
+    },
+    "privat-uni": {
+      id: "privat-uni",
+      label: "Private<br>Hochschulen",
+      subtitle: "Selbstfinanzierte Lehre",
+      desc: "Private Universitäten und Fachhochschulen finanzieren sich über Studiengebühren und bieten kleinere Kohorten, individuelle Betreuung und spezialisierte Programme.",
+      color: "#8b5cf6",
+      meta: { Reichweite: "Selektiv", Trägerschaft: "Privatwirtschaftlich" },
+      children: []
+    },
+
+    // ═══ GESUNDHEIT — Unterwaben (Ebene 2) ═══
+    "private-versicherung": {
+      id: "private-versicherung",
+      label: "Private<br>Versicherungen",
+      subtitle: "Individueller Schutz",
+      desc: "Individuell auf die Bedürfnisse zugeschnitten — kein Mitfinanzieren fremder Leistungen. Jeder zahlt für seinen eigenen Risikoprofil und wählt den gewünschten Umfang.",
+      color: "#a855f7",
+      meta: { Reichweite: "Hoch", Trägerschaft: "Privatwirtschaftlich" },
+      children: []
+    },
+    "bessere-ernaehrung": {
+      id: "bessere-ernaehrung",
+      label: "Bessere<br>Ernährung",
+      subtitle: "Brutto = Netto",
+      desc: "Mit weniger Steuern und Abgaben bleibt mehr Netto vom Brutto. Die Möglichkeit, qualitativ bessere Lebensmittel zu kaufen, verbessert die Gesundheit von allein.",
+      color: "#a855f7",
+      meta: { Reichweite: "Universal", Trägerschaft: "Individuum" },
+      children: []
+    },
+    "medikamentenmarkt": {
+      id: "medikamentenmarkt",
+      label: "Freier Medizin-<br>markt",
+      subtitle: "Jede Behandlung möglich",
+      desc: "Freier Markt für Medikamente: Jede Behandlung ist möglich durch direkte Verhandlung mit Versicherungen. Trust-Zertifikate, Gilden und Zünfte garantieren Qualität.",
+      color: "#a855f7",
+      meta: { Reichweite: "Hoch", Trägerschaft: "Privat / Markt" },
+      children: []
+    },
+    "private-krankenhaeuser": {
+      id: "private-krankenhaeuser",
+      label: "Private<br>Krankenhäuser",
+      subtitle: "Reputationssystem",
+      desc: "Krankenhäuser müssen nicht schließen, da sie real kalkulieren können. Medizintourismus schafft Arbeitsplätze und Gesundheitsangebot für die Bevölkerung.",
+      color: "#a855f7",
+      meta: { Reichweite: "Wachsend", Trägerschaft: "Privat / Medizin" },
+      children: []
+    },
+    "praevention": {
+      id: "praevention",
+      label: "Bessere<br>Prävention",
+      subtitle: "Markt statt Marx in der KV",
+      desc: "Krankenversicherungen belohnen Gesunde durch Prämienrückzahlung oder bessere Konditionen. Das Public-Good-Gain-Dilemma wird gelöst — Versicherungen wollen gesunde, keine Pflegefälle.",
+      color: "#a855f7",
+      meta: { Reichweite: "Hoch", Trägerschaft: "Versicherungen" },
+      children: []
+    },
+    "heilmarkt": {
+      id: "heilmarkt",
+      label: "Freier<br>Heilmarkt",
+      subtitle: "Wettbewerb der Heilmöglichkeiten",
+      desc: "Gesundheit wird im Markt belohnt. Wettbewerb der Heilmöglichkeiten treibt Innovation, senkt Preise und erhöht die Qualität der Behandlung.",
+      color: "#a855f7",
+      meta: { Reichweite: "Mittel", Trägerschaft: "Freier Markt" },
+      children: []
+    },
+    "abomodell": {
+      id: "abomodell",
+      label: "Abomodell<br>Arzt",
+      subtitle: "Pauschale statt Einzelleistung",
+      desc: "Der Arzt erhält eine feste Pauschale statt Geld pro Behandlung — jede vermiedene Krankheit spart ihm Arbeit. So richten sich die Anreize auf Gesunderhaltung statt auf Behandlungsmenge.",
+      color: "#a855f7",
+      meta: { Reichweite: "Experimentell", Trägerschaft: "Privat" },
+      children: []
+    },
+    "freerider": {
+      id: "freerider",
+      label: "Freerider-<br>Diskriminierung",
+      subtitle: "Eigenverantwortung",
+      desc: "Leute, die sich schädlich verhalten, bekommen hohe Aufschläge und können im Härtefall gekündigt werden. Eigenverantwortung statt Solidaritätszwang.",
+      color: "#a855f7",
+      meta: { Reichweite: "Selektiv", Trägerschaft: "Versicherungen" },
+      children: []
+    },
+
+    // ═══ SICHERHEIT — Unterwaben (Ebene 2) ═══
+    "private-security": {
+      id: "private-security",
+      label: "Private<br>Sicherheitsdienste",
+      subtitle: "Professioneller Schutz",
+      desc: "Private Sicherheitsfirmen bieten professionellen Schutz für Personen, Unternehmen und Gemeinschaften — effizienter, schneller und direkt rechenschaftspflichtig gegenüber ihren Kunden.",
+      color: "#6366f1",
+      meta: { Reichweite: "Hoch", Trägerschaft: "Privat" },
+      children: []
+    },
+    "chaostheorie": {
+      id: "chaostheorie",
+      label: "Chaos-<br>theorie",
+      subtitle: "Selbstorganisation",
+      desc: "Selbstorganisation emergenter Ordnung: Ohne zentrale Planung entsteht durch dezentrale Interaktion ein stabiles Sicherheitsnetz — Chaos theorie als Argument gegen das Zwangsgewaltmonopol.",
+      color: "#6366f1",
+      meta: { Reichweite: "Theoretisch", Trägerschaft: "Wissenschaft" },
+      children: []
+    },
+    "versicherungen-si": {
+      id: "versicherungen-si",
+      label: "Versicherungen",
+      subtitle: "Risikotransfer",
+      desc: "Versicherungen haben ein intrinsisches Interesse an Sicherheit: Je weniger Schäden, desto höher der Gewinn. Sie finanzieren Prävention, Ermittlungen und Wiedergutmachung.",
+      color: "#6366f1",
+      meta: { Reichweite: "Hoch", Trägerschaft: "Privatwirtschaftlich" },
+      children: []
+    },
+    "privatdetektei": {
+      id: "privatdetektei",
+      label: "Privat-<br>detektei",
+      subtitle: "Ermittlung & Aufklärung",
+      desc: "Private Ermittler arbeiten im Auftrag von Opfern, Versicherungen oder Gemeinschaften. Direkte Verantwortlichkeit und Wettbewerb sorgen für höhere Aufklärungsquoten als staatliche Stellen.",
+      color: "#6366f1",
+      meta: { Reichweite: "Mittel", Trägerschaft: "Privat" },
+      children: []
+    },
+    "buergerwehr": {
+      id: "buergerwehr",
+      label: "Bürger-<br>wehr",
+      subtitle: "Gemeinschaftsschutz",
+      desc: "Bewaffnete Bürgerwehren schützen ihre Nachbarschaft freiwillig. Dezentral, schnell und mit lokalem Wissen — sie ergänzen professionelle Dienste um direkte Nähe.",
+      color: "#6366f1",
+      meta: { Reichweite: "Lokal", Trägerschaft: "Bürger / Gemeinschaft" },
+      children: []
+    },
+    "journalismus": {
+      id: "journalismus",
+      label: "Journalismus",
+      subtitle: "Transparenz & Kontrolle",
+      desc: "Unabhängiger Journalismus deckt Missstände auf und hält Machtausübung — auch private — öffentlich accountable. Die vierte Gewalt existiert unabhängig vom Staat.",
+      color: "#6366f1",
+      meta: { Reichweite: "Hoch", Trägerschaft: "Medien / Privat" },
+      children: []
+    },
+    "truther": {
+      id: "truther",
+      label: "Truther /<br>Whistleblower",
+      subtitle: "Aufklärung von innen",
+      desc: "Insider, die Missstände und Korruption aufdecken, sind ein unverzichtbares Korrektiv. Schutz und Belohnung für Whistleblower stärken die Integrität jedes Systems.",
+      color: "#6366f1",
+      meta: { Reichweite: "Selektiv", Trägerschaft: "Individuum" },
+      children: []
+    },
+    "private-polizei": {
+      id: "private-polizei",
+      label: "Private<br>Polizei",
+      subtitle: "Durchsetzung von Recht",
+      desc: "Private Polizeikräfte arbeiten auf Basis vertraglicher Vereinbarungen. Ihre Legitimation kommt vom Kunden, ihre Effizienz vom Wettbewerb um Verträge und Reputation.",
+      color: "#6366f1",
+      meta: { Reichweite: "Mittel", Trägerschaft: "Privat" },
+      children: []
+    },
+    "anzeigen": {
+      id: "anzeigen",
+      label: "Private<br>Anzeigen",
+      subtitle: "Hauptmeister-System",
+      desc: "Private Anzeigenhauptmeister ermitteln und dokumentieren Verstöße gegen Recht und Eigentum. Ihr Honorar hängt von der erfolgreichen Aufklärung und Wiedergutmachung ab.",
+      color: "#6366f1",
+      meta: { Reichweite: "Experimentell", Trägerschaft: "Privat" },
+      children: []
+    },
+    "waffenrecht": {
+      id: "waffenrecht",
+      label: "Freies<br>Waffenrecht",
+      subtitle: "Selbstschutz als Grundrecht",
+      desc: "Keiner hat Bock, in Texas einzumarschieren oder einzubrechen. Das freie Waffenrecht ist der ultimative Selbstschutz und Abschreckung — jeder Haushalt ist seine eigene Festung.",
+      color: "#6366f1",
+      meta: { Reichweite: "Hoch", Trägerschaft: "Individuum" },
+      children: []
+    },
+
+    // ═══ INFRASTRUKTUR — Unterwaben (Ebene 2) ═══
+    "private-hand": {
+      id: "private-hand",
+      label: "Private<br>Hand",
+      subtitle: "Eigennutz treibt Bau",
+      desc: "Jeder will, dass sein Haus an die Straße angeschlossen ist. Private Eigentümer und Gemeinschaften haben den stärksten Anreiz, Infrastruktur zu bauen und zu erhalten.",
+      color: "#14b8a6",
+      meta: { Reichweite: "Lokal", Trägerschaft: "Eigentümer" },
+      children: []
+    },
+    "industrie-infra": {
+      id: "industrie-infra",
+      label: "Industrie",
+      subtitle: "Firmen bauen für ihre Mitarbeiter",
+      desc: "Die Industrie baut Straßen — sogar Häuser — für ihre Mitarbeiter. Unternehmen haben ein direktes Interesse an funktionierender Infrastruktur, um Logistik und Pendler zu ermöglichen.",
+      color: "#14b8a6",
+      meta: { Reichweite: "Hoch", Trägerschaft: "Unternehmen" },
+      children: []
+    },
+    "befoerderung": {
+      id: "befoerderung",
+      label: "Beförderungs-<br>gewerbe",
+      subtitle: "Flughäfen & Logistik",
+      desc: "Flughäfen, Häfen und Logistikunternehmen haben ein intrinsisches Interesse an Straßen. Sie bauen und unterhalten Verkehrswege, die ihr Kerngeschäft direkt unterstützen.",
+      color: "#14b8a6",
+      meta: { Reichweite: "Hoch", Trägerschaft: "Wirtschaft" },
+      children: []
+    },
+    "sicherheit-infra": {
+      id: "sicherheit-infra",
+      label: "Private<br>Sicherheit",
+      subtitle: "Schnelle Einsatzwege",
+      desc: "Polizei und private Sicherheitsdienste wollen schnell an ihre Ziele. Sie investieren in Straßen und Wege, die ihre Reaktionszeiten minimieren.",
+      color: "#14b8a6",
+      meta: { Reichweite: "Mittel", Trägerschaft: "Sicherheitsdienste" },
+      children: []
+    },
+    "notdienste": {
+      id: "notdienste",
+      label: "Private<br>Notdienste",
+      subtitle: "Feuerwehr & Rettung",
+      desc: "Die Feuerwehr will schnell dahin, wo es brennt. Private Notdienste haben ein existenzielles Interesse an gut ausgebauter Infrastruktur für minimale Reaktionszeiten.",
+      color: "#14b8a6",
+      meta: { Reichweite: "Hoch", Trägerschaft: "Notdienste" },
+      children: []
+    },
+    "versicherungen-infra": {
+      id: "versicherungen-infra",
+      label: "Versicherungen",
+      subtitle: "Schaden minimieren",
+      desc: "Versicherungen haben ein Interesse, dass Notdienste ihre Ziele schnell erreichen. Jede Minute Verzögerung erhöht den Schaden — und ihre Kosten.",
+      color: "#14b8a6",
+      meta: { Reichweite: "Hoch", Trägerschaft: "Versicherungen" },
+      children: []
+    },
+    "haendler": {
+      id: "haendler",
+      label: "Händler",
+      subtitle: "Die ersten Straßenbauer",
+      desc: "Händler waren die ersten Menschen, die Straßen gebaut haben. Der Handel lebt von Verbindungen — seit Jahrtausenden treibt er den Ausbau von Wegen und Brücken voran.",
+      color: "#14b8a6",
+      meta: { Reichweite: "Universal", Trägerschaft: "Handel" },
+      children: []
+    },
+    "fazit": {
+      id: "fazit",
+      label: "Fazit",
+      subtitle: "Privat baut besser",
+      desc: "Jeder kann Straßen in Auftrag geben — denn die Firmen, die Straßen planen und bauen, sind am Ende auch privat. Staatliche Zwischenschaltung verzögert nur und verteuert.",
+      color: "#14b8a6",
+      meta: { Reichweite: "Fundamental", Trägerschaft: "Markt" },
+      children: []
+    },
+
+    // ═══ ÖKONOMIE — Unterwaben (Ebene 2) ═══
+    "freier-geldmarkt": {
+      id: "freier-geldmarkt",
+      label: "Freier Geld-<br>markt",
+      subtitle: "Wettbewerb der Währungen",
+      desc: "Freier Markt für Geld: Wettbewerb der Währungen treibt Stabilität, Transparenz und Vertrauen. Kein Zwang zur Nutzung einer staatlichen Währung mit politisch motivierter Entwertung.",
+      color: "#f59e0b",
+      meta: { Reichweite: "Hoch", Trägerschaft: "Privat / Markt" },
+      children: []
+    },
+    "freier-handel": {
+      id: "freier-handel",
+      label: "Freier<br>Handel",
+      subtitle: "Effizienz wird gefördert",
+      desc: "Freier Handel ohne Zölle und Quoten fördert Effizienz. In 100 Jahren an den Grenzen des Sonnensystems muss das Ziel sein — Zwangshindernisse bremsen nur aus.",
+      color: "#f59e0b",
+      meta: { Reichweite: "Global", Trägerschaft: "Unternehmen / Konsumenten" },
+      children: []
+    },
+    "arbeitsteilung": {
+      id: "arbeitsteilung",
+      label: "Freiwillige<br>Arbeitsteilung",
+      subtitle: "Jäger & Pfeilemacher",
+      desc: "Jedes Individuum hat Talente, die der Markt am besten fördert. Der Jäger und der Pfeilemacher profitieren beide, wenn jeder das tut, was er am besten kann — freiwillig.",
+      color: "#f59e0b",
+      meta: { Reichweite: "Universal", Trägerschaft: "Individuum" },
+      children: []
+    },
+    "abwesenheit-staat": {
+      id: "abwesenheit-staat",
+      label: "Abwesenheit<br>des Staates",
+      subtitle: "Ineffizienzen aussondern",
+      desc: "Ohne staatliche Eingriffe werden Ineffizienzen ausgesondert. Der Markt korrigiert Fehlallokationen selbst — schneller, präziser und ohne politische Vetternwirtschaft.",
+      color: "#f59e0b",
+      meta: { Reichweite: "Fundamental", Trägerschaft: "Markt" },
+      children: []
+    },
+    "produktionsmittel": {
+      id: "produktionsmittel",
+      label: "Private<br>Produktionsmittel",
+      subtitle: "Privat schlägt Staat",
+      desc: "Private Produktionsmittel sind effizienter als staatliche. Eigentum schafft Anreize für Pflege, Innovation und Investition — staatliches Eigentum schafft nur Tragedy of the Commons.",
+      color: "#f59e0b",
+      meta: { Reichweite: "Hoch", Trägerschaft: "Unternehmer" },
+      children: []
+    },
+    "private-haftung": {
+      id: "private-haftung",
+      label: "Private<br>Haftung",
+      subtitle: "Der Staat kann nicht pleitegehen",
+      desc: "Der Staat kann nicht pleitegehen — es sei denn, alle sind tot. Private Haftung schafft echte Verantwortlichkeit: Wer Fehler macht, trägt die Konsequenzen, statt sie auf Steuerzahler abzuwälzen.",
+      color: "#f59e0b",
+      meta: { Reichweite: "Fundamental", Trägerschaft: "Recht / Markt" },
+      children: []
+    },
+    "kontaktnetzwerke": {
+      id: "kontaktnetzwerke",
+      label: "Kontakt-<br>netzwerke",
+      subtitle: "Positive Netzwerkeffekte",
+      desc: "Wenn jeder nach den Seinen schaut, ist jedem geholfen. Freiwillige Netzwerke, Gilden und Gemeinschaften schaffen Synergien, die staatliche Bürokratie nie erreichen kann.",
+      color: "#f59e0b",
+      meta: { Reichweite: "Hoch", Trägerschaft: "Gemeinschaft" },
+      children: []
+    },
+    "deflation": {
+      id: "deflation",
+      label: "Deflation",
+      subtitle: "Günstigere Preise mittelfristig",
+      desc: "Im freien Markt mit hartem Geld führt Wettbewerb zu sinkenden Preisen. Deflation bedeutet steigende Kaufkraft für alle — Geld wird wertvoller, statt durch Druck entwertet.",
+      color: "#f59e0b",
+      meta: { Reichweite: "Langfristig", Trägerschaft: "Markt" },
+      children: []
+    },
+    "konsumentenschutz": {
+      id: "konsumentenschutz",
+      label: "Konsumenten-<br>schutz",
+      subtitle: "Stiftung Warentest & Gütesiegel",
+      desc: "Privater Konsumentenschutz durch Gütesiegel, Testinstitute und Reputationssysteme. Ein toter Kunde zahlt nicht mehr — Unternehmen haben einen existenziellen Anreiz für Qualität und Sicherheit.",
+      color: "#f59e0b",
+      meta: { Reichweite: "Hoch", Trägerschaft: "Konsumenten / Vereine" },
+      children: []
+    },
+    "subjektive-wert": {
+      id: "subjektive-wert",
+      label: "Subjektive<br>Wertlehre",
+      subtitle: "Nutzen bestimmt den Wert",
+      desc: "Das Subjekt bestimmt den Wert aus dem Nutzen einer Dienstleistung oder eines Gutes, das es bereit ist zu zahlen. Die Grenzen nach oben sind offen — jeder Wert ist individuell.",
+      color: "#f59e0b",
+      meta: { Reichweite: "Theoretisch", Trägerschaft: "Ökonomie" },
+      children: []
+    },
+    "grenznutzen": {
+      id: "grenznutzen",
+      label: "Grenz-<br>nutzen",
+      subtitle: "1. vs. 2. vs. 3. Wasserkocher",
+      desc: "Der Grenznutzen sinkt mit jedem zusätzlichen Gut. Ein Wasserkocher ist Gold wert, der zweite nett, der dritte überflüssig — diese Einsicht steuert rationale Allokation.",
+      color: "#f59e0b",
+      meta: { Reichweite: "Fundamental", Trägerschaft: "Ökonomie" },
+      children: []
+    },
+    "angebot-nachfrage": {
+      id: "angebot-nachfrage",
+      label: "Angebot &<br>Nachfrage",
+      subtitle: "Knappheit bestimmt Preis",
+      desc: "Hohe Nachfrage bei begrenztem Gut erzeugt Knappheit. Preise steigen und lenken Ressourcen dorthin, wo sie am dringendsten gebraucht werden — das universelle Steuerungssystem.",
+      color: "#f59e0b",
+      meta: { Reichweite: "Fundamental", Trägerschaft: "Markt" },
+      children: []
+    },
+
+    // ═══ RECHT — Unterwaben (Ebene 2) ═══
+    "common-law": {
+      id: "common-law",
+      label: "Common<br>Law",
+      subtitle: "Fortschreitende Rechtsfindung",
+      desc: "Common Law entwickelt sich fortschreitend durch Rechtsfindung übergeordneter Prinzipien. Präzedenzfälle schaffen stabile, vorhersehbare Regeln — ohne legislativen Zwang.",
+      color: "#a855f7",
+      meta: { Reichweite: "Hoch", Trägerschaft: "Tradition / Gerichte" },
+      children: []
+    },
+    "gilden-orden": {
+      id: "gilden-orden",
+      label: "Gilden /<br>Orden",
+      subtitle: "Interne Rechtsordnung",
+      desc: "Zünfte und Gilden haben eigene Reputationen und interne Gerichte. Sie regulieren Berufsstandards, schlichten Konflikte und sanktionieren Mitglieder effizienter als staatliche Instanzen.",
+      color: "#a855f7",
+      meta: { Reichweite: "Stabil", Trägerschaft: "Berufsstände" },
+      children: []
+    },
+    "schiedsgerichte": {
+      id: "schiedsgerichte",
+      label: "Private<br>Schiedsgerichte",
+      subtitle: "Ad-hoc-Gerichtsbarkeit",
+      desc: "Private Schiedsgerichte garantieren Unabhängigkeit und Effizienz. Parteien wählen Richter, Verfahren und Ort — Ad-hoc-Gerichte entstehen, wenn keine Einigung möglich ist.",
+      color: "#a855f7",
+      meta: { Reichweite: "Hoch", Trägerschaft: "Privat" },
+      children: []
+    },
+    "eigentumsrecht": {
+      id: "eigentumsrecht",
+      label: "Eigentums-<br>recht",
+      subtitle: "Konfliktmindernde Lösung",
+      desc: "Eigentum ist die konfliktmindernde Lösung par excellence. Klare Eigentumsrechte verhindern Tragedy of the Commons und schaffen Anreize für Pflege und Nutzung.",
+      color: "#a855f7",
+      meta: { Reichweite: "Fundamental", Trägerschaft: "Recht" },
+      children: []
+    },
+    "reputation": {
+      id: "reputation",
+      label: "Reputation",
+      subtitle: "Das A und O der Rechtssprechung",
+      desc: "Das Reputationssystem ist das A und O individueller Rechtssprechung. Wer sein Wort bricht, seinen Vertrag verletzt oder schädigt, verliert Ansehen — und damit zukünftige Geschäftschancen.",
+      color: "#a855f7",
+      meta: { Reichweite: "Universal", Trägerschaft: "Gemeinschaft" },
+      children: []
+    },
+    "scherbengericht": {
+      id: "scherbengericht",
+      label: "Scherben-<br>gericht",
+      subtitle: "Anonymisierte Mobgruppe",
+      desc: "Ein anonymisiertes Scherbengericht stellt Verbrecher bloß, ohne physischer Gewalt. Soziale Ächtung und öffentliche Demütigung können stärker wirken als Haftstrafen.",
+      color: "#a855f7",
+      meta: { Reichweite: "Selektiv", Trägerschaft: "Gemeinschaft" },
+      children: []
+    },
+    "diskriminierung": {
+      id: "diskriminierung",
+      label: "Diskrimi-<br>nierung",
+      subtitle: "Basiert auf Reputation",
+      desc: "Diskriminierung basiert auf Reputation: Wer sich als unzuverlässig, gewalttätig oder unehrlich erwiesen hat, wird von Verträgen, Handel und Gemeinschaft ausgeschlossen.",
+      color: "#a855f7",
+      meta: { Reichweite: "Hoch", Trägerschaft: "Gemeinschaft" },
+      children: []
+    },
+    "sanktionierung": {
+      id: "sanktionierung",
+      label: "Sanktionie-<br>rung",
+      subtitle: "Basiert auf Reputation",
+      desc: "Sanktionen basieren auf Reputation: Verlust von Handelsrechten, Ausschluss aus Gilden, Boykotte und Entzug von Dienstleistungen ersetzen staatliche Strafen.",
+      color: "#a855f7",
+      meta: { Reichweite: "Hoch", Trägerschaft: "Gemeinschaft" },
+      children: []
+    },
+    "verbannung": {
+      id: "verbannung",
+      label: "Verbannung",
+      subtitle: "Ultima Ratio",
+      desc: "Verbannung ist die Ultima Ratio des dezentralen Rechtssystems. Wer schwere Vergehen begeht und keine Wiedergutmachung leistet, wird aus der Gemeinschaft ausgeschlossen.",
+      color: "#a855f7",
+      meta: { Reichweite: "Selektiv", Trägerschaft: "Gemeinschaft" },
+      children: []
+    }
+  }
+};
+
+/* ═══════════════════════════════════════════════════════════════
+   ║  ERGÄNZUNGEN — Beispiele, Quellen, Querverbindungen         ║
+   ║                                                              ║
+   ║  examples: Liste kurzer Belege (Geschichte / Gegenwart)      ║
+   ║  sources:  Liste von Literaturangaben (Text, optional url)   ║
+      ═══════════════════════════════════════════════════════════════ */
+
+const EXTRAS = {
+  "friendly-society": {
+    examples: [
+      "Großbritannien um 1910: Friendly Societies versichern schätzungsweise 6–9 Mio. Menschen freiwillig gegen Krankheit, Unfall und Tod — allein die Oddfellows rund 800.000.",
+      "USA um 1900–1930: Fraternal Societies betreiben Krankenkassen, Waisenhäuser und eigene Krankenhäuser."
+    ],
+    sources: [
+      { t: "David G. Green — Reinventing Civil Society (IEA, 1993)" },
+      { t: "David T. Beito — From Mutual Aid to the Welfare State (UNC Press, 2000)" }
+    ]
+  },
+  "bildung": {
+    examples: [
+      "England vor 1870: Elementarbildung läuft überwiegend über private und kirchliche, schulgeldfinanzierte Schulen — staatliche Schulen kommen erst mit dem Forster Act 1870 dazu.",
+      "Indien, Nigeria, Ghana heute: Günstige Privatschulen in Armenvierteln, von Eltern selbst bezahlt."
+    ],
+    sources: [
+      { t: "E. G. West — Education and the State (IEA, 1965)" },
+      { t: "James Tooley — The Beautiful Tree (Cato Institute, 2009)" }
+    ]
+  },
+  "winkelschulen": {
+    examples: ["Seit dem späten Mittelalter: Eltern bezahlen Lehrer direkt, Unterricht oft in einfachen Räumen wie ehemaligen Läden."]
+  },
+  "homeschooling": { examples: ["USA: Homeschooling ist in allen 50 Bundesstaaten legal — Michigan erkannte es 1993 als einer der letzten an."] },
+  "internet-lernen": { examples: ["Khan Academy (seit 2008): kostenloser Unterricht, gemeinnützig und spendenfinanziert."] },
+  "industrie-uni": { examples: ["McDonald's Hamburger University (seit 1961) — eigene Firmenuniversität für Führungskräfte."] },
+  "gilden": { examples: ["Mittelalterliche Zünfte organisieren die Ausbildung als Lehrling → Geselle → Meister — ohne Kultusministerium."] },
+  "privat-uni": { examples: ["Harvard (1636), MIT, Stanford — private Hochschulen an der Weltspitze, mit großzügigen Stipendien für Begabte ohne Geld."] },
+  "fazit": { examples: ["Straßen werden schon heute privat geplant und gebaut — z. B. von Leonhard Weiss, Krebs+Kiefer, Schüßler-Plan oder Grontmij (heute Sweco)."] },
+
+  "gesundheit": {
+    examples: ["USA, frühes 20. Jh.: Fraternal Societies kaufen ärztliche Versorgung pauschal für ihre Mitglieder ein — etwa 2 $ pro Jahr („Lodge Practice“)."],
+    sources: [{ t: "David T. Beito — From Mutual Aid to the Welfare State (2000)" }]
+  },
+  "abomodell": {
+    examples: [
+      "Lodge Practice (USA, frühes 20. Jh.): Ärzte erhalten etwa 2 $ pro Mitglied und Jahr.",
+      "Direct Primary Care (USA heute): Pauschale direkt an die Hausarztpraxis, ohne Kasse dazwischen.",
+      "Indien heute: Abo-Modelle wie Sevamob — rund 100 Rupien im Monat für regelmäßige Hausbesuche."
+    ]
+  },
+  "private-krankenhaeuser": { examples: ["Narayana Health (Indien): Herz-OPs für rund 2.000 $ statt 20.000–100.000 $ in den USA — dank Skaleneffekten wie in der Autoproduktion."] },
+
+  "sicherheit": {
+    examples: ["Island 930–1262: Recht und Rechtsdurchsetzung liegen weitgehend in privater Hand."],
+    sources: [
+      { t: "David Friedman — The Machinery of Freedom (1973)" },
+      { t: "David Friedman — Private Creation and Enforcement of Law: A Historical Case (J. of Legal Studies, 1979)" }
+    ]
+  },
+  "private-security": { examples: ["USA: rund 1,1 Mio. private Sicherheitskräfte gegenüber 666.000 Polizisten (2017)."] },
+  "private-polizei": { examples: ["Pinkerton (gegr. 1850 in Chicago als North-Western Police Agency) — private Ermittlungs- und Schutzdienste."] },
+  "versicherungen-si": { examples: ["London, 18. Jh.: Feuerversicherer unterhalten eigene Löschbrigaden; Feuermarken zeigen, welches Haus versichert ist."] },
+
+  "infrastruktur": {
+    examples: [
+      "England 18.–19. Jh.: Über 1.000 Turnpike Trusts finanzieren Straßen über Maut.",
+      "Schweden heute: rund 75.000 km private Straßen, betrieben von Anliegervereinen (vägföreningar), teils mit Staatszuschuss."
+    ],
+    sources: [{ t: "Walter Block — The Privatization of Roads and Highways (Mises Institute, 2009)" }]
+  },
+  "notdienste": { examples: ["London 1833: Die Versicherer legen ihre Löschbrigaden zur London Fire Engine Establishment zusammen."] },
+  "haendler": { examples: ["Hanse: Kaufleute organisieren Handelswege, Kontore und Geleitschutz selbst — gestützt auf Privilegien von Städten und Fürsten."] },
+
+  "oekonomie": {
+    sources: [
+      { t: "Ludwig von Mises — Human Action (1949)" },
+      { t: "F. A. Hayek — The Use of Knowledge in Society (American Economic Review, 1945)" }
+    ]
+  },
+  "freier-geldmarkt": {
+    examples: ["Schottland bis 1845: Free Banking — konkurrierende Privatbanken geben eigene Banknoten aus."],
+    sources: [
+      { t: "F. A. Hayek — Denationalisation of Money (1976)" },
+      { t: "Lawrence H. White — Free Banking in Britain (1984)" }
+    ]
+  },
+  "deflation": { sources: [{ t: "George Selgin — Less Than Zero (IEA, 1997)" }] },
+  "subjektive-wert": { sources: [{ t: "Carl Menger — Grundsätze der Volkswirtschaftslehre (1871)" }] },
+  "grenznutzen": { sources: [{ t: "Carl Menger — Grundsätze der Volkswirtschaftslehre (1871)" }] },
+  "arbeitsteilung": { sources: [{ t: "Leonard E. Read — I, Pencil (1958)" }, { t: "Adam Smith — Wealth of Nations (1776)" }] },
+  "konsumentenschutz": { examples: ["Underwriters Laboratories (1894): private Prüfstelle, gegründet von William Henry Merrill und von Versicherern finanziert — das UL-Siegel."] },
+
+  "recht": {
+    examples: ["Mittelalter: Die Lex Mercatoria — das Kaufmannsrecht des Fernhandels; auf den Champagnemessen entschieden Messegerichte Handelsstreitigkeiten."],
+    sources: [
+      { t: "Bruce L. Benson — The Enterprise of Law (1990)" },
+      { t: "Milgrom, North, Weingast — The Law Merchant, Private Judges, and the Champagne Fairs (1990)" }
+    ]
+  },
+  "schiedsgerichte": { examples: ["ICC-Schiedsgerichtshof (seit 1923): internationale Handelsstreitigkeiten ohne staatliche Gerichte."] },
+  "reputation": {
+    examples: ["Maghribi-Händler, 11. Jh.: Verträge werden über Reputationskoalitionen durchgesetzt."],
+    sources: [{ t: "Avner Greif — Contract Enforceability … The Maghribi Traders' Coalition (AER, 1993)" }]
+  },
+  "verbannung": { examples: ["Island 930–1262: Ächtung (Friedlosigkeit) als härteste Sanktion."] },
+  "scherbengericht": { examples: ["Athen, 5. Jh. v. Chr.: Ostrakismos — Verbannung per Tonscherben-Abstimmung."] }
+};
+
+// Querverbindungen — gelten automatisch in beide Richtungen
+const RELATED = {
+  "private-versicherung": ["versicherungen-si", "versicherungen-infra", "friendly-society"],
+  "versicherungen-infra": ["versicherungen-si", "notdienste"],
+  "versicherungen-si": ["notdienste"],
+  "private-security": ["private-polizei", "sicherheit-infra"],
+  "private-polizei": ["schiedsgerichte"],
+  "gilden": ["gilden-orden", "kontaktnetzwerke"],
+  "freerider": ["diskriminierung", "reputation", "sanktionierung"],
+  "medikamentenmarkt": ["konsumentenschutz", "heilmarkt"],
+  "konsumentenschutz": ["reputation"],
+  "haendler": ["freier-handel", "schiedsgerichte"],
+  "industrie-infra": ["industrie-uni", "produktionsmittel"],
+  "bildungsmarkt": ["angebot-nachfrage"],
+  "foerderung": ["karitativ-bildung"],
+  "privatdetektei": ["anzeigen", "journalismus"],
+  "journalismus": ["truther"],
+  "waffenrecht": ["buergerwehr"],
+  "private-haftung": ["eigentumsrecht", "produktionsmittel"],
+  "chaostheorie": ["arbeitsteilung", "abwesenheit-staat"],
+  "private-hand": ["eigentumsrecht"],
+  "abomodell": ["praevention"],
+  "praevention": ["private-versicherung"],
+  "kontaktnetzwerke": ["friendly-society", "gilden-orden"]
+
+};
+
+// Einwand & Antwort — objections: [{ q: Frage, a: Antwort }]
+const OBJECTIONS = {
+  "friendly-society": { objections: [{ q: "Was ist mit denen, die durchs Raster fallen?", a: "Ohne Steuerlast bleibt Familien, Kirchen und Vereinen mehr, um zu helfen. Vor dem Sozialstaat sicherten Friendly Societies und karitative Einrichtungen Millionen Menschen ab — der Sozialstaat hat sie verdrängt, nicht erst ermöglicht." }] },
+  "bildung": { objections: [{ q: "Lernen arme Kinder dann gar nichts mehr?", a: "Gerade in armen Regionen wählen Eltern günstige Privatschulen, weil Lehrer an staatlichen Schulen oft fehlen oder unmotiviert sind (Tooley). Dazu kommen Stipendien, karitative Träger und kostenlose Online-Angebote." }] },
+  "gesundheit": { objections: [{ q: "Wer zahlt bei Armut oder Vorerkrankung?", a: "Gegenseitigkeitsvereine, Lodge-Practice-Ärzte und karitative Krankenhäuser haben genau das historisch übernommen. Ohne Regulierungskosten sinken die Preise, und in der Schweiz können Babys schon vor der Geburt versichert werden." }] },
+  "freerider": { objections: [{ q: "Werden hier nicht die Armen bestraft?", a: "Bewertet wird Verhalten, nicht Einkommen. Wer unverschuldet in Not ist, fällt in karitative Fonds — wie die Unterstützungskassen der historischen Gegenseitigkeitsvereine." }] },
+  "sicherheit": { objections: [{ q: "Werden Sicherheitsfirmen nicht zu Warlords?", a: "Krieg ist teuer: Kunden und Versicherer zahlen für Schutz, nicht für Aggression. Für zwei Firmen ist ein Schiedsverfahren in der Regel billiger als ein Kampf — so das Argument von David Friedman." }] },
+  "private-polizei": { objections: [{ q: "Schutz nur für die, die zahlen?", a: "Viertel, Vermieter und Versicherer kaufen Schutz für ganze Gebiete ein — wie heute bei Wachdiensten in Wohnanlagen. Sicherheit ist dann im Mietpreis enthalten statt in der Steuer." }] },
+  "infrastruktur": { objections: [{ q: "Wer baut Straßen aufs Land?", a: "Die, deren Grundstücke durch Anbindung an Wert gewinnen: Anlieger, Gemeinden, Betriebe. In Schweden unterhalten Anliegervereine heute rund 75.000 km private Straßen, teils mit staatlichem Zuschuss." }] },
+  "oekonomie": { objections: [{ q: "Führt der freie Markt nicht zu Monopolen?", a: "Dauerhafte Monopole brauchen meist staatlichen Schutz: Lizenzen, Regulierung, Subventionen. Ohne Markteintrittsbarrieren lockt jeder hohe Gewinn neue Konkurrenz an." }] },
+  "freier-geldmarkt": { objections: [{ q: "Gibt es dann nicht ständig Bankpleiten?", a: "Banken, die voll haften und gegenseitig ihre Noten einlösen, disziplinieren sich selbst. Schottlands Free-Banking-Ära gilt bei Lawrence White als stabil — unter Ökonomen ist das allerdings umstritten." }] },
+  "deflation": { objections: [{ q: "Droht nicht eine Deflationsspirale?", a: "Sinkende Preise durch höhere Produktivität sind keine Krise, sondern wachsender Wohlstand (Selgin, Less Than Zero)." }] },
+  "recht": { objections: [{ q: "Wer setzt ein Urteil durch, wenn sich einer weigert?", a: "Wer ein Urteil ignoriert, verliert Handelspartner, Versicherungsschutz und Kredit. So beschreiben Milgrom, North und Weingast die Champagnemessen des 12. und 13. Jahrhunderts." }] },
+  "schiedsgerichte": { objections: [{ q: "Ist private Justiz nicht nur etwas für Reiche?", a: "Schiedsverfahren sind oft schneller als staatliche Prozesse, wenn auch nicht immer billiger. Anbieter konkurrieren um Fairness, denn ein parteiischer Schiedsrichter verliert beide Seiten als Kunden." }] }
+};
+
+// Weiterlesen & Videos — kind: "Video" | "Podcast" | "Wiki" | "Buch" | "Tool"
+const LINKS = {
+  "friendly-society": [
+    {kind: "Podcast", t: "Praxeolog Nr. 33 — Wohlfahrt", u: "https://www.youtube.com/watch?v=ksvyuxc_VXY"},
+    {kind: "Podcast", t: "Praxeolog Nr. 42 — Solidarität", u: "https://www.youtube.com/watch?v=ZlydSDt32CE"},
+    {kind: "Podcast", t: "Praxeolog Nr. 95 — Gemeinschaft", u: "https://www.youtube.com/watch?v=OzyMBqmDnrA"}
+  ],
+  "bildung": [
+    {kind: "Podcast", t: "Praxeolog Nr. 19 — Bildung", u: "https://www.youtube.com/watch?v=kSmDs_IADzg"},
+    {kind: "Podcast", t: "Praxeolog Nr. 122 — Schule", u: "https://www.youtube.com/watch?v=0AkpRO9t_vw"},
+    {kind: "Podcast", t: "Praxeolog Nr. 72 — Lernen", u: "https://www.youtube.com/watch?v=gnrY_j-s7Xg"},
+    {kind: "Video", t: "Praxeolog Watch & React Nr. 12 — Was Schulen nicht lehren", u: "https://www.youtube.com/watch?v=ScOMp46dclE"}
+  ],
+  "winkelschulen": [
+    {kind: "Wiki", t: "Winkelschule — Wikipedia", u: "https://de.wikipedia.org/wiki/Winkelschule"},
+    {kind: "Podcast", t: "Praxeolog Nr. 122 — Schule", u: "https://www.youtube.com/watch?v=0AkpRO9t_vw"}
+  ],
+  "homeschooling": [
+    {kind: "Podcast", t: "Praxeolog Nr. 72 — Lernen", u: "https://www.youtube.com/watch?v=gnrY_j-s7Xg"}
+  ],
+  "internet-lernen": [
+    {kind: "Tool", t: "Khan Academy", u: "https://de.khanacademy.org/"},
+    {kind: "Tool", t: "NotebookLM — mit KI aus eigenen Quellen lernen", u: "https://notebooklm.google/"}
+  ],
+  "medikamentenmarkt": [
+    {kind: "Podcast", t: "Praxeolog Nr. 34 — Drogen", u: "https://www.youtube.com/watch?v=E6ylqpZl4jk"}
+  ],
+  "sicherheit": [
+    {kind: "Podcast", t: "Praxeolog Nr. 155 — Sicherheit", u: "https://www.youtube.com/watch?v=6uKeB4BvhxY"},
+    {kind: "Podcast", t: "Praxeolog Nr. 130 — Wilder Westen", u: "https://www.youtube.com/watch?v=xFTmovRlKTs"},
+    {kind: "Video", t: "Praxeolog Watch & React Nr. 101 — Anarchie Somalia", u: "https://www.youtube.com/watch?v=AnCSvVASKVM"},
+    {kind: "Buch", t: "Rothbard — For a New Liberty (englisch, frei)", u: "https://mises.org/library/book/new-liberty-libertarian-manifesto"}
+  ],
+  "chaostheorie": [
+    {kind: "Podcast", t: "Praxeolog Nr. 157 — Alltagsanarchie", u: "https://www.youtube.com/watch?v=LwbpwrIqO4w"}
+  ],
+  "infrastruktur": [
+    {kind: "Podcast", t: "Praxeolog Nr. 74 — Mobilität", u: "https://www.youtube.com/watch?v=9JcHnM1mTBw"},
+    {kind: "Podcast", t: "Praxeolog Nr. 81 — Privatisierung", u: "https://www.youtube.com/watch?v=jT3qv4z6npI"},
+    {kind: "Buch", t: "Walter Block — The Privatization of Roads and Highways (frei)", u: "https://mises.org/library/book/privatization-roads-and-highways"}
+  ],
+  "oekonomie": [
+    {kind: "Podcast", t: "Praxeolog Nr. 1 — Praxeologie", u: "https://www.youtube.com/watch?v=Im_8bTf3sZc"},
+    {kind: "Podcast", t: "Praxeolog Nr. 29 — Handeln", u: "https://www.youtube.com/watch?v=2-e4Q_SEI4I"},
+    {kind: "Podcast", t: "Praxeolog Nr. 31 — Monopole", u: "https://www.youtube.com/watch?v=wT3-gI-e_Xc"},
+    {kind: "Wiki", t: "mises.at — Glossar der Österreichischen Schule", u: "https://mises.at/glossar"},
+    {kind: "Buch", t: "Mises — Nationalökonomie (1940, PDF, frei)", u: "https://cdn.mises.org/Nationalokonomie%20Theorie%20des%20Handelns%20und%20Wirtschaftens_2.pdf"},
+    {kind: "Video", t: "Ludwig von Mises Institut Deutschland (Kanal)", u: "https://www.youtube.com/@MisesDE"}
+  ],
+  "freier-geldmarkt": [
+    {kind: "Podcast", t: "Praxeolog Nr. 76 — Geld", u: "https://www.youtube.com/watch?v=SvFI9V_PGIY"},
+    {kind: "Podcast", t: "Praxeolog Nr. 121 — Bitcoin", u: "https://www.youtube.com/watch?v=oVDVtocHj4U"},
+    {kind: "Buch", t: "Hayek — Denationalisation of Money (PDF, frei)", u: "https://iea.org.uk/wp-content/uploads/2016/07/upldbook431pdf.pdf"}
+  ],
+  "deflation": [
+    {kind: "Podcast", t: "Praxeolog Nr. 109 — Deflation", u: "https://www.youtube.com/watch?v=ApHtjACpyBE"},
+    {kind: "Video", t: "Praxeolog Watch & React Nr. 80 — Angst vor Deflation", u: "https://www.youtube.com/watch?v=Pm9Rpfp-Myw"}
+  ],
+  "subjektive-wert": [
+    {kind: "Podcast", t: "Praxeolog Nr. 108 — Wert", u: "https://www.youtube.com/watch?v=PwreAcWkLA4"},
+    {kind: "Buch", t: "Menger — Grundsätze der Volkswirthschaftslehre (online lesen)", u: "https://mises.at/werke/menger-grundsaetze-der-volkswirthschaftslehre-en/lesen/preface"}
+  ],
+  "grenznutzen": [
+    {kind: "Podcast", t: "Praxeolog Nr. 108 — Wert", u: "https://www.youtube.com/watch?v=PwreAcWkLA4"},
+    {kind: "Buch", t: "Menger — Grundsätze der Volkswirthschaftslehre (online lesen)", u: "https://mises.at/werke/menger-grundsaetze-der-volkswirthschaftslehre-en/lesen/preface"},
+    {kind: "Wiki", t: "mises.at — Glossar der Österreichischen Schule", u: "https://mises.at/glossar"}
+  ],
+  "angebot-nachfrage": [
+    {kind: "Podcast", t: "Praxeolog Nr. 44 — Knappheit", u: "https://www.youtube.com/watch?v=r_H2BKwIshk"}
+  ],
+  "freier-handel": [
+    {kind: "Podcast", t: "Praxeolog Nr. 83 — Freihandel", u: "https://www.youtube.com/watch?v=xan5t2_Oiew"}
+  ],
+  "abwesenheit-staat": [
+    {kind: "Podcast", t: "Praxeolog Nr. 216 — Laissez-Faire", u: "https://www.youtube.com/watch?v=QlWhGg_XhQM"}
+  ],
+  "recht": [
+    {kind: "Podcast", t: "Praxeolog Nr. 14 — Ethik, Recht & Moral", u: "https://www.youtube.com/watch?v=EXOWcdexu6A"},
+    {kind: "Buch", t: "Rothbard — For a New Liberty (englisch, frei)", u: "https://mises.org/library/book/new-liberty-libertarian-manifesto"}
+  ],
+  "common-law": [
+    {kind: "Podcast", t: "Praxeolog Nr. 213 — Rechtsprechung", u: "https://www.youtube.com/watch?v=gVWN35eCJa0"}
+  ],
+  "eigentumsrecht": [
+    {kind: "Podcast", t: "Praxeolog Nr. 90 — Eigentum", u: "https://www.youtube.com/watch?v=BrHabZGu3mA"},
+    {kind: "Podcast", t: "Praxeolog Nr. 39 — Grundbesitz", u: "https://www.youtube.com/watch?v=s8SEHUyX2ps"}
+  ],
+  "reputation": [
+    {kind: "Podcast", t: "Praxeolog Nr. 84 — Ruf", u: "https://www.youtube.com/watch?v=4WZTLt2Wl_Y"},
+    {kind: "Podcast", t: "Praxeolog Nr. 36 — Vertrauen", u: "https://www.youtube.com/watch?v=1cQOPrXGBII"}
+  ],
+  "konsumentenschutz": [
+    {kind: "Podcast", t: "Praxeolog Nr. 106 — Zertifikate", u: "https://www.youtube.com/watch?v=9huGvcR-Gyg"}
+  ],
+  "sanktionierung": [
+    {kind: "Podcast", t: "Praxeolog Nr. 55 — Bestrafung", u: "https://www.youtube.com/watch?v=Z-HMaBRihq0"}
+  ]
+};
+
+// Aus dem Praxeolog Podcast — automatisch aus den Transkripten (wiki/tools), geprüft gegen das Transkript
+const PRAXEOLOG = {
+ "abwesenheit-staat": [
+  {
+   "ep": "Nr. 107 — Wählen",
+   "t": "Politik beruht auf Zwang, der Markt auf freiwilligem Angebot; wer politisch denkt, sucht Lösungen beim Staat statt bei sich selbst.",
+   "u": "https://www.youtube.com/watch?v=jKh6fVFiyq4&t=922s",
+   "z": "15:22"
+  },
+  {
+   "ep": "Nr. 24 — Marktversagen",
+   "t": "Auf dem freien Markt werden Fehlallokationen durch Verluste bestraft, was Lernen ermöglicht; erst staatliche Rettung verzerrt dieses Feedback.",
+   "u": "https://www.youtube.com/watch?v=cZ8KQz1I5dU&t=255s",
+   "z": "04:15"
+  },
+  {
+   "ep": "Nr. 152 — NGOs",
+   "t": "Die Kosten der NGO-Politik trägt der Steuerzahler, während Entscheider nicht haften, was kein Marktfeedback erzeugt.",
+   "u": "https://www.youtube.com/watch?v=Mg4TNHuj3uA&t=1818s",
+   "z": "30:18"
+  }
+ ],
+ "angebot-nachfrage": [
+  {
+   "ep": "Nr. 44 — Knappheit",
+   "t": "Steigende Preise signalisieren Knappheit und lenken Produzenten zu mehr Angebot, bis die Preise wieder sinken.",
+   "u": "https://www.youtube.com/watch?v=r_H2BKwIshk&t=494s",
+   "z": "08:14"
+  },
+  {
+   "ep": "Nr. 203 — Unternehmer",
+   "t": "Staatliche Eingriffe wie Preiskontrollen und Regulierung simulieren Nachfrage, schalten Knappheitssignale aus und behindern das Unternehmertum.",
+   "u": "https://www.youtube.com/watch?v=6Fm3XAcRCuo&t=2437s",
+   "z": "40:37"
+  },
+  {
+   "ep": "Nr. 60 — Das Kalkulationsproblem",
+   "t": "Preise entstehen auf freien Märkten aus Angebot und Nachfrage und enthalten Informationen über Bedürfnisse und Knappheit.",
+   "u": "https://www.youtube.com/watch?v=R7XnK61fYyU&t=133s",
+   "z": "02:13"
+  }
+ ],
+ "arbeitsteilung": [
+  {
+   "ep": "Nr. 165 — Sinn",
+   "t": "Individuelle und kollektive Motive werden auf dem Markt durch freiwillige Interaktion und Reziprozität zusammengebracht. Echte Gemeinschaft und Solidarität entstehen so.",
+   "u": "https://www.youtube.com/watch?v=eYQgXMsGb34&t=2181s",
+   "z": "36:21"
+  },
+  {
+   "ep": "Nr. 103 — Improvisation",
+   "t": "In Gruppen entsteht Selbstorganisation und funktionale Arbeitsteilung spontan, wenn jeder seine Stärken frei einsetzen kann.",
+   "u": "https://www.youtube.com/watch?v=8ouhXBk7sDU&t=1044s",
+   "z": "17:24"
+  },
+  {
+   "ep": "Nr. 69 — Geschlechterrollen",
+   "t": "Geschlechterrollen entstanden evolutionär als funktionale Arbeitsteilung; sie sind freiwillig und keine Pflicht.",
+   "u": "https://www.youtube.com/watch?v=5xdzwliqS6U&t=1164s",
+   "z": "19:24"
+  }
+ ],
+ "befoerderung": [
+  {
+   "ep": "Nr. 74 — Mobilität",
+   "t": "Straßen ließen sich privat über Maut und zweckgebundene Nutzerabgaben finanzieren, statt aus allgemeinen Steuern.",
+   "u": "https://www.youtube.com/watch?v=9JcHnM1mTBw&t=1584s",
+   "z": "26:24"
+  }
+ ],
+ "bessere-ernaehrung": [
+  {
+   "ep": "Nr. 25 — Hunger",
+   "t": "Durch Märkte, Arbeitsteilung und Technik ist der Anteil absolut Armer von über 90 Prozent (1800) auf unter 10 Prozent gesunken.",
+   "u": "https://www.youtube.com/watch?v=wm86mrDuvKE&t=309s",
+   "z": "05:09"
+  },
+  {
+   "ep": "Nr. 147 — Bequemlichkeit",
+   "t": "Viele bequeme Angebote führen zu Isolation und Vereinsamung; Zeitersparnis erzeugt oft mehr Stress statt weniger.",
+   "u": "https://www.youtube.com/watch?v=jiVTEeEe70c&t=1944s",
+   "z": "32:24"
+  }
+ ],
+ "bildung": [
+  {
+   "ep": "Nr. 106 — Zertifikate",
+   "t": "Auf einem freien Markt ersetzen Ruf, Haftung und private Schulen, Unis und Agenturen die staatliche Zertifizierung und schaffen Wettbewerb.",
+   "u": "https://www.youtube.com/watch?v=9huGvcR-Gyg&t=2079s",
+   "z": "34:39"
+  },
+  {
+   "ep": "Nr. 19 — Bildung",
+   "t": "Staatliche Schulen wirken nur scheinbar kostenlos, weil sie über Steuern bezahlt werden; Privatschulen sind im Schnitt günstiger.",
+   "u": "https://www.youtube.com/watch?v=kSmDs_IADzg&t=927s",
+   "z": "15:27"
+  },
+  {
+   "ep": "Nr. 122 — Schule",
+   "t": "Das staatliche Berechtigungswesen über Zeugnisse ist eine Form von Kontrolle und Planwirtschaft; Zugang zu Berufen sollte über Prüfungen und nicht über staatliche Zertifikate laufen.",
+   "u": "https://www.youtube.com/watch?v=0AkpRO9t_vw&t=2747s",
+   "z": "45:47"
+  }
+ ],
+ "bildungsmarkt": [
+  {
+   "ep": "Watch & React Nr. 12 — Was Schulen nicht lehren",
+   "t": "Lobbyismus und staatliche Subventionen, Regulierung und Sonderrechte sichern großen Konzernen ihre Positionen, was auf einem freien Markt so nicht möglich wäre.",
+   "u": "https://www.youtube.com/watch?v=ScOMp46dclE&t=429s",
+   "z": "07:09"
+  },
+  {
+   "ep": "Nr. 122 — Schule",
+   "t": "Statt Ministerien sollten Kunden über die Schulwahl entscheiden, Abstimmung mit den Füßen, und so schlechte Schulen vom Markt verdrängen.",
+   "u": "https://www.youtube.com/watch?v=0AkpRO9t_vw&t=1589s",
+   "z": "26:29"
+  },
+  {
+   "ep": "Nr. 2 — Spekulation [Remake]",
+   "t": "Sozialismus ist ökonomisch blind, weil ohne Marktpreise planlos Verschwendung entsteht; er ist daher auch das am wenigsten nachhaltige System.",
+   "u": "https://www.youtube.com/watch?v=Idpm2H76Z4o&t=1102s",
+   "z": "18:22"
+  }
+ ],
+ "buergerwehr": [
+  {
+   "ep": "Nr. 149 — Avaritionismus",
+   "t": "Ein freier Markt ohne Nichtaggressionsprinzip ist ein Widerspruch in sich, weil Markt Freiwilligkeit und Eigentumsrechte voraussetzt.",
+   "u": "https://www.youtube.com/watch?v=u96cNB4q6jo&t=370s",
+   "z": "06:10"
+  },
+  {
+   "ep": "Nr. 155 — Sicherheit",
+   "t": "Zentrale Machtstrukturen sind leichter korrumpierbar als dezentrales Eigentum in individueller Kontrolle; der Staat sei oft selbst der Aggressor.",
+   "u": "https://www.youtube.com/watch?v=6uKeB4BvhxY&t=2252s",
+   "z": "37:32"
+  }
+ ],
+ "chaostheorie": [
+  {
+   "ep": "Nr. 127 — Volatilität",
+   "t": "Ohne Eigentum und Preissignale fehlt das Feedback für Lernen; Planung führt zum Kalkulationsproblem und zu Fehlallokation.",
+   "u": "https://www.youtube.com/watch?v=ifvUSO46wwI&t=2199s",
+   "z": "36:39"
+  },
+  {
+   "ep": "Nr. 197 — Komplexität",
+   "t": "Die Politik behandelt komplexe Probleme wie komplizierte und erzeugt eine Interventionsspirale, weil Nebeneffekte in späteren Schritten ignoriert werden.",
+   "u": "https://www.youtube.com/watch?v=GH_SAhP_hu0&t=1656s",
+   "z": "27:36"
+  },
+  {
+   "ep": "Nr. 37 — Morphische Resonanz",
+   "t": "Die Theorie stößt auf Ablehnung, weil sie etablierte physikalische und chemische Annahmen infrage stellt und eine neue Form von Energie postuliert.",
+   "u": "https://www.youtube.com/watch?v=vtZg4q8hbyA&t=1170s",
+   "z": "19:30"
+  }
+ ],
+ "common-law": [
+  {
+   "ep": "Nr. 166 — Lehnswesen",
+   "t": "Die Verschriftlichung der Lehensverträge, vor allem in Norditalien, half bei der Entwicklung des Rechts. Die Entwicklung ähnelt dem Common Law, weil sich das Recht aus der Praxis heraus bildete.",
+   "u": "https://www.youtube.com/watch?v=5anMcljZ8X8&t=728s",
+   "z": "12:08"
+  },
+  {
+   "ep": "Nr. 41 — Wahrheit",
+   "t": "Naturrecht, das sich über Jahrhunderte bewährt hat, ist rechtspositivistischen Ansätzen überlegen; kleine Gemeinschaften können Regeln durch Ausprobieren finden.",
+   "u": "https://www.youtube.com/watch?v=zTTalePOgH4&t=1837s",
+   "z": "30:37"
+  },
+  {
+   "ep": "Nr. 125 — Spontane Ordnung",
+   "t": "Sprache, Traditionen und Institutionen entwickeln sich evolutionär durch Gebrauch und Selektion, nicht durch Anordnung von oben.",
+   "u": "https://www.youtube.com/watch?v=QJHre4R4_Xs&t=314s",
+   "z": "05:14"
+  }
+ ],
+ "deflation": [
+  {
+   "ep": "Watch & React Nr. 80 — Angst vor Deflation",
+   "t": "Unter dem Goldstandard der Gilded-Age-Zeit gab es trotz deflationären Geldes Städtebau, Industrialisierung und steigende Kaufkraft der ärmeren Schichten.",
+   "u": "https://www.youtube.com/watch?v=Pm9Rpfp-Myw&t=1524s",
+   "z": "25:24"
+  },
+  {
+   "ep": "Nr. 109 — Deflation",
+   "t": "Die Behauptung, Deflation führe zu Depression und Arbeitslosigkeit, ist historisch nicht belegt, da beides nur selten zusammentraf.",
+   "u": "https://www.youtube.com/watch?v=ApHtjACpyBE&t=1894s",
+   "z": "31:34"
+  },
+  {
+   "ep": "Nr. 189 — Cantillon Effekt",
+   "t": "Eine Geldmengenausweitung bei gleichbleibenden realen Gütern verzerrt die Preise, weil die Nachfrage der Erstempfänger in bestimmten Bereichen zuerst steigt.",
+   "u": "https://www.youtube.com/watch?v=ePm5tzAoQ68&t=187s",
+   "z": "03:07"
+  }
+ ],
+ "diskriminierung": [
+  {
+   "ep": "Nr. 66 — Diskriminierung",
+   "t": "Diskriminierung im Sinne von Unterscheidung ist unvermeidbar, weil jede Handlung andere Handlungen ausschließt.",
+   "u": "https://www.youtube.com/watch?v=8l8H0UnoNrk&t=2201s",
+   "z": "36:41"
+  },
+  {
+   "ep": "Nr. 87 — Rassismus",
+   "t": "Begründete statistische Vorurteile sind eine sinnvolle Mustererkennung, die sich bei individuell gutem Verhalten abbauen lässt, während Diskriminierung Händler und Arbeitgeber oft Geld kostet.",
+   "u": "https://www.youtube.com/watch?v=xGiIc_PCbFs&t=1042s",
+   "z": "17:22"
+  },
+  {
+   "ep": "Nr. 88 — Toleranz",
+   "t": "Worte und Gedanken sollte man tolerieren, Taten und aggressives Verhalten dagegen nicht, weil Gewalt das Nichtaggressionsprinzip verletzt.",
+   "u": "https://www.youtube.com/watch?v=bhbZ3ldILbI&t=1531s",
+   "z": "25:31"
+  }
+ ],
+ "eigentumsrecht": [
+  {
+   "ep": "Nr. 98 — Besitzverhältnisse",
+   "t": "Besitz bezeichnet die tatsächliche Nutzung, Eigentum die rechtliche Zuordnung; in Deutschland gewährt der Staat Eigentum heute oft als Fiat-Eigentum unter Bedingungen.",
+   "u": "https://www.youtube.com/watch?v=aUkGEw7T288&t=133s",
+   "z": "02:13"
+  },
+  {
+   "ep": "Nr. 102 — Erbe",
+   "t": "Erben schafft Anreize zu Sparen, Konsumverzicht und Leistung, weil Menschen Wohlstand für ihre Nachkommen bewahren wollen.",
+   "u": "https://www.youtube.com/watch?v=cqJAa8pUtp4&t=131s",
+   "z": "02:11"
+  },
+  {
+   "ep": "Nr. 115 — Kompromisse",
+   "t": "Eigentumsrechte reduzieren Konflikte und damit die Zahl der Kompromisse; ohne klare Zuordnung entstehen Verteilungskonflikte.",
+   "u": "https://www.youtube.com/watch?v=gR6mAy-3H_I&t=132s",
+   "z": "02:12"
+  }
+ ],
+ "foerderung": [
+  {
+   "ep": "Nr. 19 — Bildung",
+   "t": "Jeder Mensch hat individuelle Potenziale; Bildung muss diese fördern, statt alle Schüler in eine gleiche Struktur zu zwingen.",
+   "u": "https://www.youtube.com/watch?v=kSmDs_IADzg&t=72s",
+   "z": "01:12"
+  },
+  {
+   "ep": "Nr. 156 — Durchlässigkeit",
+   "t": "Eltern haben den stärksten Einfluss auf Kinder, und die Übergabe der Erziehung an anonyme Bürokraten birgt großes Missbrauchspotenzial.",
+   "u": "https://www.youtube.com/watch?v=U3klwz-GAeU&t=549s",
+   "z": "09:09"
+  },
+  {
+   "ep": "Nr. 204 — Standardisierung",
+   "t": "Fazit: Großflächige Standardisierung ist sinnvoll bei Technik und Prozessen, nicht bei Menschen; Bildung sollte individuell, selbstbestimmt und dezentral organisiert sein.",
+   "u": "https://www.youtube.com/watch?v=Gf8ZxOsnjWw&t=3049s",
+   "z": "50:49"
+  }
+ ],
+ "freerider": [
+  {
+   "ep": "Nr. 27.1 — Linksdarwinismus",
+   "t": "Verteilungsgerechtigkeit mit Ergebnisgleichheit nimmt Leistungsanreize: Wer mehr leistet, bekommt nicht mehr, und Leistung, Sparsamkeit und Eigenverantwortung schwinden.",
+   "u": "https://www.youtube.com/watch?v=5Vl42ZWYN0c&t=861s",
+   "z": "14:21"
+  }
+ ],
+ "freie-schulen": [
+  {
+   "ep": "Nr. 122 — Schule",
+   "t": "Schulpflicht und Verstaatlichung dienten der Disziplinierung, der Kontrolle der Inhalte und der Erziehung zu Staatsdienern.",
+   "u": "https://www.youtube.com/watch?v=0AkpRO9t_vw&t=616s",
+   "z": "10:16"
+  },
+  {
+   "ep": "Nr. 156 — Durchlässigkeit",
+   "t": "Eltern haben den stärksten Einfluss auf Kinder, und die Übergabe der Erziehung an anonyme Bürokraten birgt großes Missbrauchspotenzial.",
+   "u": "https://www.youtube.com/watch?v=U3klwz-GAeU&t=549s",
+   "z": "09:09"
+  },
+  {
+   "ep": "Nr. 111 — Intuition",
+   "t": "Intuition sind Einsichten in Zusammenhänge und Gesetzmäßigkeiten, die ohne bewusste logische Schlussfolgerung entstehen und Entscheidungen beeinflussen.",
+   "u": "https://www.youtube.com/watch?v=YZn6pCwQZ0s&t=10s",
+   "z": "00:10"
+  }
+ ],
+ "freier-geldmarkt": [
+  {
+   "ep": "Nr. 140 — Whitepill",
+   "t": "Die Politik verliert an Einfluss; ihr aggressives Double-Down zeigt, dass Staaten ihre Legitimität verlieren.",
+   "u": "https://www.youtube.com/watch?v=flUjwvSLRic&t=742s",
+   "z": "12:22"
+  },
+  {
+   "ep": "Nr. 153 — Schulden",
+   "t": "Zinsen sind der Preis für die Wartezeit; am freien Markt ergibt sich der Zins aus Sparquote und Kreditnachfrage.",
+   "u": "https://www.youtube.com/watch?v=utHQSraZ1hs&t=247s",
+   "z": "04:07"
+  },
+  {
+   "ep": "Nr. 185 — Verschwendung",
+   "t": "Schäden müssten eingepreist werden, etwa durch Haftung und Ausgleichszahlungen, dann würde auch freier Markt Umweltschäden vermeiden.",
+   "u": "https://www.youtube.com/watch?v=eH9pkkdynTA&t=2185s",
+   "z": "36:25"
+  }
+ ],
+ "freier-handel": [
+  {
+   "ep": "Nr. 196 — Kartelle",
+   "t": "Kartelle auf freien Märkten sind instabil, weil jedes Mitglied Anreiz hat, Quoten und Mindestpreise zu unterlaufen, und Verträge nicht gerichtlich durchsetzbar sind.",
+   "u": "https://www.youtube.com/watch?v=yxCDX-Cth9k&t=673s",
+   "z": "11:13"
+  },
+  {
+   "ep": "Nr. 59 — Kolonialismus",
+   "t": "Kolonialherrschaft war erzwungene Herrschaft ohne freien Austausch; daher handelte es sich nicht um Kapitalismus oder einen freien Markt, sondern um Zwangswirtschaft.",
+   "u": "https://www.youtube.com/watch?v=wSFEsPc7HZ8&t=1531s",
+   "z": "25:31"
+  },
+  {
+   "ep": "Nr. 124 — Wettbewerb",
+   "t": "Wettbewerb auf freien Märkten ist eine Konkurrenz um Lösungen und Kooperation, nicht ein Kampf aller gegen alle.",
+   "u": "https://www.youtube.com/watch?v=kHyCWlousBg&t=72s",
+   "z": "01:12"
+  }
+ ],
+ "friendly-society": [
+  {
+   "ep": "Nr. 159 — Care-Arbeit",
+   "t": "Der Sozialstaat verringert die Bedeutung der Familie und ersetzt persönliche Abhängigkeit durch unpersönliche Abhängigkeit von Ämtern und Bürokraten.",
+   "u": "https://www.youtube.com/watch?v=qV_zgdxVWGU&t=183s",
+   "z": "03:03"
+  },
+  {
+   "ep": "Nr. 95 — Gemeinschaft",
+   "t": "Freiwillige Gemeinschaften sind der Normalfall; problematisch sind nur staatliche Zwangsgemeinschaften, die natürliche Gemeinschaften wie die Familie verdrängen.",
+   "u": "https://www.youtube.com/watch?v=OzyMBqmDnrA&t=2614s",
+   "z": "43:34"
+  },
+  {
+   "ep": "Nr. 116 — Menschenbild",
+   "t": "Solidarität beruht auf Freiwilligkeit; staatliche Umverteilung ist zwangsbasiert und daher keine echte Solidarität.",
+   "u": "https://www.youtube.com/watch?v=EgzZUpQciPQ&t=1109s",
+   "z": "18:29"
+  }
+ ],
+ "gesundheit": [
+  {
+   "ep": "Nr. 34 — Drogen",
+   "t": "Die Kostenabwälzung über staatliche Sozial- und Gesundheitssysteme auf die Allgemeinheit sollte durch private Systeme ersetzt werden.",
+   "u": "https://www.youtube.com/watch?v=E6ylqpZl4jk&t=802s",
+   "z": "13:22"
+  },
+  {
+   "ep": "Nr. 179 — Eugenik",
+   "t": "Gesundheitliche Kosten sollten lokal und dezentral in Gemeinschaften getragen werden, mit Feedback, statt über ein staatliches System auf die Allgemeinheit verteilt zu werden.",
+   "u": "https://www.youtube.com/watch?v=_qI5tunO8aA&t=2620s",
+   "z": "43:40"
+  },
+  {
+   "ep": "Nr. 159 — Care-Arbeit",
+   "t": "Verzerrte Preise durch Steuern, Regulierung und Subventionen führen zu Fehlallokation und Kalkulationsproblemen; ein freier Markt würde bessere Qualität zu geringeren Preisen bieten.",
+   "u": "https://www.youtube.com/watch?v=qV_zgdxVWGU&t=1091s",
+   "z": "18:11"
+  }
+ ],
+ "gilden": [
+  {
+   "ep": "Nr. 106 — Zertifikate",
+   "t": "Über das Berechtigungswesen hat der Staat ein Bildungs- und Ausbildungsmonopol, weil er bestimmt, wer Zeugnisse ausstellen darf und welche Inhalte gelten.",
+   "u": "https://www.youtube.com/watch?v=9huGvcR-Gyg&t=321s",
+   "z": "05:21"
+  },
+  {
+   "ep": "Nr. 220 — Ungenutztheit",
+   "t": "Pseudo-Ungenutztheit wie Ausbildung, Bauzeiten oder Bauland in Erwartung ist produktiv und notwendig für Wandel.",
+   "u": "https://www.youtube.com/watch?v=2wqtp2mtVO4&t=367s",
+   "z": "06:07"
+  },
+  {
+   "ep": "Nr. 23 — Arbeitslosigkeit",
+   "t": "Arbeitslosigkeit ist meist die Folge staatlicher Eingriffe, insbesondere von Mindestlöhnen, Berechtigungswesen und Arbeitsschutzgesetzen.",
+   "u": "https://www.youtube.com/watch?v=lgF7zaSCv4I&t=311s",
+   "z": "05:11"
+  }
+ ],
+ "grenznutzen": [
+  {
+   "ep": "Nr. 1 — Praxeologie [Remake]",
+   "t": "Mit jeder zusätzlichen Einheit eines Gutes sinkt sein Grenznutzen, und der Wert eines Gutes ist für jede Person subjektiv.",
+   "u": "https://www.youtube.com/watch?v=Im_8bTf3sZc&t=976s",
+   "z": "16:16"
+  },
+  {
+   "ep": "Nr. 108 — Wert",
+   "t": "Mit wachsender Menge eines Gutes sinkt der Grenznutzen des letzten Stücks, bis er im Extremfall auf null fällt.",
+   "u": "https://www.youtube.com/watch?v=PwreAcWkLA4&t=557s",
+   "z": "09:17"
+  },
+  {
+   "ep": "Nr. 7 — Profit [Remake]",
+   "t": "Wert ist subjektiv; der Grenznutzen sinkt mit der Menge eines Gutes, Preisbildung beruht auf subjektiven Werturteilen.",
+   "u": "https://www.youtube.com/watch?v=XvrYWCnp558&t=193s",
+   "z": "03:13"
+  }
+ ],
+ "heilmarkt": [
+  {
+   "ep": "Nr. 173 — Sucht",
+   "t": "Süchtige müssen die Kosten selbst tragen; Therapie sollte über einen freien Markt laufen und nur bei Heilung hoch vergütet werden.",
+   "u": "https://www.youtube.com/watch?v=f5sa4tK4keI&t=1584s",
+   "z": "26:24"
+  },
+  {
+   "ep": "Nr. 106 — Zertifikate",
+   "t": "Auf einem freien Markt ersetzen Ruf, Haftung und private Schulen, Unis und Agenturen die staatliche Zertifizierung und schaffen Wettbewerb.",
+   "u": "https://www.youtube.com/watch?v=9huGvcR-Gyg&t=2079s",
+   "z": "34:39"
+  }
+ ],
+ "homeschooling": [
+  {
+   "ep": "Nr. 79 — Kinder",
+   "t": "Biologisch betrachtet ist die Weitergabe der eigenen Gene das evolutionäre Ziel, das Kinderkriegen bleibt aber eine subjektive Entscheidung.",
+   "u": "https://www.youtube.com/watch?v=scMTfZ68Iu8&t=10s",
+   "z": "00:10"
+  },
+  {
+   "ep": "Nr. 156 — Durchlässigkeit",
+   "t": "Eltern haben den stärksten Einfluss auf Kinder, und die Übergabe der Erziehung an anonyme Bürokraten birgt großes Missbrauchspotenzial.",
+   "u": "https://www.youtube.com/watch?v=U3klwz-GAeU&t=549s",
+   "z": "09:09"
+  },
+  {
+   "ep": "Nr. 72 — Lernen",
+   "t": "Lernen ist ein individueller Anpassungsprozess, der Verhalten ändert und die Handlungsoptionen erweitert.",
+   "u": "https://www.youtube.com/watch?v=gnrY_j-s7Xg&t=131s",
+   "z": "02:11"
+  }
+ ],
+ "industrie-infra": [
+  {
+   "ep": "Nr. 135 — Chemie",
+   "t": "Das Haber-Bosch-Verfahren ermöglichte Kunstdünger und damit ein Bevölkerungswachstum jenseits der malthusianischen Falle.",
+   "u": "https://www.youtube.com/watch?v=b18Azegw4NQ&t=1167s",
+   "z": "19:27"
+  },
+  {
+   "ep": "Nr. 183 — Skaleneffekte",
+   "t": "Großunternehmen sind nicht für immer stabil; die meisten Top-100-Unternehmen von 1925 existieren nicht mehr, weil Wandel und Marktbereinigung wirken.",
+   "u": "https://www.youtube.com/watch?v=zyebUxzXLMk&t=2198s",
+   "z": "36:38"
+  }
+ ],
+ "industrie-uni": [
+  {
+   "ep": "Nr. 65 — Wissenschaft",
+   "t": "Politisch ausgewählte Experten und staatliche Finanzierung verengen die Forschung und machen Fehlprognosen wahrscheinlicher.",
+   "u": "https://www.youtube.com/watch?v=nHAoB3un-Ow&t=1536s",
+   "z": "25:36"
+  }
+ ],
+ "infrastruktur": [
+  {
+   "ep": "Nr. 74 — Mobilität",
+   "t": "Straßen ließen sich privat über Maut und zweckgebundene Nutzerabgaben finanzieren, statt aus allgemeinen Steuern.",
+   "u": "https://www.youtube.com/watch?v=9JcHnM1mTBw&t=1584s",
+   "z": "26:24"
+  },
+  {
+   "ep": "Nr. 68 — Wasser",
+   "t": "Sauberes Trinkwasser braucht Kapital und Energie für Aufbereitung und Verteilung und muss deshalb bezahlt werden.",
+   "u": "https://www.youtube.com/watch?v=kyTvA8cUKlQ&t=920s",
+   "z": "15:20"
+  },
+  {
+   "ep": "Nr. 117 — Geographie",
+   "t": "Raumeingriffe sind am besten über Privateigentum zu lösen, weil dann die Kosten schlechter Entscheidungen vollständig beim Verursacher liegen.",
+   "u": "https://www.youtube.com/watch?v=azuFMd24Xq0&t=2562s",
+   "z": "42:42"
+  }
+ ],
+ "internet-lernen": [
+  {
+   "ep": "Nr. 65 — Wissenschaft",
+   "t": "Wissenschaft lebt von Diskurs und Meinungsverschiedenheiten; Unterdrückung abweichender Meinungen ist ein Machtinstrument.",
+   "u": "https://www.youtube.com/watch?v=nHAoB3un-Ow&t=1045s",
+   "z": "17:25"
+  },
+  {
+   "ep": "Nr. 72 — Lernen",
+   "t": "Lernen ist ein individueller Anpassungsprozess, der Verhalten ändert und die Handlungsoptionen erweitert.",
+   "u": "https://www.youtube.com/watch?v=gnrY_j-s7Xg&t=131s",
+   "z": "02:11"
+  },
+  {
+   "ep": "Nr. 57 — Künstliche Intelligenz",
+   "t": "KI erkennt Muster in riesigen Datenmengen und gibt assoziatives Wissen wieder, besitzt aber kein echtes Verständnis.",
+   "u": "https://www.youtube.com/watch?v=q6JLw1L-VRU&t=71s",
+   "z": "01:11"
+  }
+ ],
+ "journalismus": [
+  {
+   "ep": "Nr. 113 — Meinungsfreiheit",
+   "t": "Jeder darf diskriminieren und soziale Folgen tragen, nur physische Gewalt und staatliche Strafen dürfen aus Meinungen nicht folgen.",
+   "u": "https://www.youtube.com/watch?v=ne61VZzVBqk&t=496s",
+   "z": "08:16"
+  },
+  {
+   "ep": "Nr. 132 — Memes",
+   "t": "Memes verhöhnen Politiker und verschieben das Overton-Fenster; Mächtige sollen Angst vor öffentlicher Kritik haben.",
+   "u": "https://www.youtube.com/watch?v=n9kRYeXnmlw&t=1836s",
+   "z": "30:36"
+  },
+  {
+   "ep": "Nr. 99 — Narrative",
+   "t": "Viele Narrative dienen dem Machterhalt, indem das bestehende Herrschaftssystem als alternativlos dargestellt und Handlungsanweisungen für angebliche Kollektivziele vermittelt werden.",
+   "u": "https://www.youtube.com/watch?v=L9EVFHATEqE&t=133s",
+   "z": "02:13"
+  }
+ ],
+ "karitativ-bildung": [
+  {
+   "ep": "Nr. 194 — Unentgeltlichkeit",
+   "t": "Positive Externalitäten wie ein gepflegter Garten gelten als Marktversagen, entstehen aber freiwillig als Nebenprodukt und brauchen keine Kompensation.",
+   "u": "https://www.youtube.com/watch?v=FuEosopgza0&t=424s",
+   "z": "07:04"
+  }
+ ],
+ "konsumentenschutz": [
+  {
+   "ep": "Nr. 28 — Kaufentscheidungen",
+   "t": "Beim Kauf zweiter Ordnung zahlt eine Person für Güter, die eine andere konsumiert, etwa bei Firmenessen; Preis und Qualität werden dann weniger beachtet.",
+   "u": "https://www.youtube.com/watch?v=YlWkrwIFIqQ&t=314s",
+   "z": "05:14"
+  },
+  {
+   "ep": "Nr. 128 — Gewerkschaften",
+   "t": "Streik ist Vertragsbruch und Eingriff in das Eigentum der Unternehmer; die Lage von Streikbrechern wird durch Arbeitsschutzrecht verzerrt.",
+   "u": "https://www.youtube.com/watch?v=2rEIvbUMIrc&t=1350s",
+   "z": "22:30"
+  },
+  {
+   "ep": "Nr. 140 — Whitepill",
+   "t": "Dezentrale Experimente wie Seasteading, freie Privatstädte und Network States verringern die territoriale Kontrolle der Staaten.",
+   "u": "https://www.youtube.com/watch?v=flUjwvSLRic&t=1896s",
+   "z": "31:36"
+  }
+ ],
+ "kontaktnetzwerke": [
+  {
+   "ep": "Nr. 95 — Gemeinschaft",
+   "t": "Freiwillige Gemeinschaften sind der Normalfall; problematisch sind nur staatliche Zwangsgemeinschaften, die natürliche Gemeinschaften wie die Familie verdrängen.",
+   "u": "https://www.youtube.com/watch?v=OzyMBqmDnrA&t=2614s",
+   "z": "43:34"
+  },
+  {
+   "ep": "Nr. 209 — Elternpflichten",
+   "t": "Erzwingbare positive Elternpflichten sind ein Einfallstor für staatlichen Paternalismus, etwa bei Schulpflicht oder Impfzwang.",
+   "u": "https://www.youtube.com/watch?v=eDopzk_c6KY&t=426s",
+   "z": "07:06"
+  },
+  {
+   "ep": "Nr. 125 — Spontane Ordnung",
+   "t": "Freiwillige Interaktion ist Win-win, Zwang ist Nullsumme; nur wer die Kosten seiner Handlungen selbst trägt, lernt durch Trial and Error.",
+   "u": "https://www.youtube.com/watch?v=QJHre4R4_Xs&t=1590s",
+   "z": "26:30"
+  }
+ ],
+ "medikamentenmarkt": [
+  {
+   "ep": "Nr. 34 — Drogen",
+   "t": "Auf einem freien Markt könnten unabhängige Labore Reinheit zertifizieren, was die Qualität gegenüber illegaler Herstellung steigern würde.",
+   "u": "https://www.youtube.com/watch?v=E6ylqpZl4jk&t=1709s",
+   "z": "28:29"
+  },
+  {
+   "ep": "Nr. 173 — Sucht",
+   "t": "Süchtige müssen die Kosten selbst tragen; Therapie sollte über einen freien Markt laufen und nur bei Heilung hoch vergütet werden.",
+   "u": "https://www.youtube.com/watch?v=f5sa4tK4keI&t=1584s",
+   "z": "26:24"
+  }
+ ],
+ "notdienste": [
+  {
+   "ep": "Nr. 112 — Katastrophenschutz",
+   "t": "Eine freiheitliche Gesellschaft müsste Katastrophen durch Vorbereitung, Prävention, Reaktion und Lernen aus Ereignissen begegnen, weil sie nicht verhinderbar sind.",
+   "u": "https://www.youtube.com/watch?v=dNjY49KRYzw&t=70s",
+   "z": "01:10"
+  },
+  {
+   "ep": "Nr. 192 — Licht",
+   "t": "Licht ist die zentrale Energiequelle nahezu aller Prozesse auf der Erde, von der Photosynthese über Wind und Meeresströmungen bis zu fossilen Brennstoffen.",
+   "u": "https://www.youtube.com/watch?v=jhWqRez-BOc&t=1166s",
+   "z": "19:26"
+  }
+ ],
+ "oekonomie": [
+  {
+   "ep": "Nr. 1 — Praxeologie [Remake]",
+   "t": "Ein Mindestlohn über der Produktivität vieler Beschäftigter führt zu Entlassungen und Arbeitslosigkeit, mit Folgen für Sozialkassen und Inflation.",
+   "u": "https://www.youtube.com/watch?v=Im_8bTf3sZc&t=1584s",
+   "z": "26:24"
+  },
+  {
+   "ep": "Nr. 119 — Hamsterrad",
+   "t": "Unproduktive Bürokratie- und Ideologiestellen binden Arbeitskraft, die auf einem freien Markt so nicht nachgefragt würde.",
+   "u": "https://www.youtube.com/watch?v=2qj0F-sRdTY&t=620s",
+   "z": "10:20"
+  },
+  {
+   "ep": "Nr. 170 — Soziale Frage",
+   "t": "Der freie Markt als Gesamtheit freiwilliger Interaktionen ist das einzige wirklich Soziale und kann die soziale Frage beantworten.",
+   "u": "https://www.youtube.com/watch?v=u1Pv1OZ1k-g&t=3458s",
+   "z": "57:38"
+  }
+ ],
+ "praevention": [
+  {
+   "ep": "Nr. 147 — Bequemlichkeit",
+   "t": "Viele bequeme Angebote führen zu Isolation und Vereinsamung; Zeitersparnis erzeugt oft mehr Stress statt weniger.",
+   "u": "https://www.youtube.com/watch?v=jiVTEeEe70c&t=1944s",
+   "z": "32:24"
+  },
+  {
+   "ep": "Nr. 171 — Vergänglichkeit",
+   "t": "Angst vor dem Tod ist kontraproduktiv; Akzeptanz und sinnvolle Nutzung der Lebenszeit sind besser, Freiheit bedeutet Verantwortung.",
+   "u": "https://www.youtube.com/watch?v=04wv07jLX5o&t=2123s",
+   "z": "35:23"
+  },
+  {
+   "ep": "Nr. 173 — Sucht",
+   "t": "Süchtige müssen die Kosten selbst tragen; Therapie sollte über einen freien Markt laufen und nur bei Heilung hoch vergütet werden.",
+   "u": "https://www.youtube.com/watch?v=f5sa4tK4keI&t=1584s",
+   "z": "26:24"
+  }
+ ],
+ "privat-uni": [
+  {
+   "ep": "Nr. 65 — Wissenschaft",
+   "t": "Forschung sollte dezentral durch Fonds, Stiftungen und private Geldgeber finanziert werden statt durch den Staat.",
+   "u": "https://www.youtube.com/watch?v=nHAoB3un-Ow&t=2023s",
+   "z": "33:43"
+  }
+ ],
+ "private-haftung": [
+  {
+   "ep": "Nr. 144 — Anything goes",
+   "t": "Libertäre wollen keine Verantwortungslosigkeit, sondern eine Welt mit Konsequenzen, Eigenverantwortung und Haftung für eigene Schäden.",
+   "u": "https://www.youtube.com/watch?v=RVBDs6cMeRw&t=65s",
+   "z": "01:05"
+  },
+  {
+   "ep": "Nr. 195 — 7 Todsünden",
+   "t": "Trägheit und Staatsgläubigkeit lassen Menschen Verantwortung abgeben, was Selbstwirksamkeit und Gesundheit schwächt.",
+   "u": "https://www.youtube.com/watch?v=3BAJ0s4tGHA&t=2552s",
+   "z": "42:32"
+  },
+  {
+   "ep": "Nr. 5 — Nachhaltigkeit [Remake]",
+   "t": "Privateigentum mit Haftung fördert Nachhaltigkeit, weil Verursacher für Schäden aufkommen und der Wert von Grundstücken erhalten bleibt.",
+   "u": "https://www.youtube.com/watch?v=YUCB4AzkAOI&t=2017s",
+   "z": "33:37"
+  }
+ ],
+ "private-hand": [
+  {
+   "ep": "Nr. 39 — Grundbesitz",
+   "t": "Gemeineigentum führt zur Übernutzung, während Privateigentum Land sorgfältiger behandelt, da der Eigentümer die langfristigen Folgen trägt.",
+   "u": "https://www.youtube.com/watch?v=s8SEHUyX2ps&t=1344s",
+   "z": "22:24"
+  },
+  {
+   "ep": "Nr. 81 — Privatisierung",
+   "t": "Privatisierung heißt die Übergabe öffentlicher Güter an private Hände, wobei Kontrolle, Kosten sowie Gewinn und Verlust beim neuen Eigentümer liegen.",
+   "u": "https://www.youtube.com/watch?v=jT3qv4z6npI&t=10s",
+   "z": "00:10"
+  },
+  {
+   "ep": "Nr. 217 — Öffentlicher Raum",
+   "t": "Lokales Gemeineigentum kann aus gemeinsamer Nutzung entstehen, etwa aus Trampelpfaden, und funktioniert nur in überschaubaren Einheiten mit direktem Feedback.",
+   "u": "https://www.youtube.com/watch?v=4FsQn6IABGo&t=1281s",
+   "z": "21:21"
+  }
+ ],
+ "private-security": [
+  {
+   "ep": "Nr. 35 — Krieg",
+   "t": "Auf einem freien Markt würden private Sicherheitsdienste, die für Schäden haften, Anreize zur Schadensminimierung und Prävention setzen.",
+   "u": "https://www.youtube.com/watch?v=XtnphppmX_o&t=1405s",
+   "z": "23:25"
+  },
+  {
+   "ep": "Nr. 155 — Sicherheit",
+   "t": "Der Staat als territorialer Zwangsmonopolist bietet Sicherheit ohne Preise, ohne Wettbewerb und ohne Überprüfung ihrer Wirksamkeit.",
+   "u": "https://www.youtube.com/watch?v=6uKeB4BvhxY&t=427s",
+   "z": "07:07"
+  },
+  {
+   "ep": "Nr. 213 — Rechtsprechung",
+   "t": "Private Schutz- und Schiedsagenturen finden im Wettbewerb bessere Regeln als das heutige Fiatrecht, das von Lobbyisten beeinflusst werden kann.",
+   "u": "https://www.youtube.com/watch?v=gVWN35eCJa0&t=185s",
+   "z": "03:05"
+  }
+ ],
+ "private-versicherung": [
+  {
+   "ep": "Nr. 47 — Altersvorsorge",
+   "t": "Eine Einheitslösung wie das staatliche Pensionssystem passt nicht zu unterschiedlichen Bedürfnissen; nötig sind vielfältige, individuelle Angebote.",
+   "u": "https://www.youtube.com/watch?v=yrtaAs_99H8&t=377s",
+   "z": "06:17"
+  },
+  {
+   "ep": "Nr. 91 — Proletariat",
+   "t": "Auf einem freien Markt mit starken Eigentumsrechten würden Versicherungen, Schulen und Polizei durch Konkurrenz besser und günstiger angeboten.",
+   "u": "https://www.youtube.com/watch?v=doDW9_TgsVA&t=2068s",
+   "z": "34:28"
+  },
+  {
+   "ep": "Nr. 187 — Anrechte",
+   "t": "Rechte sind negative Freiheiten als Abwehrrechte gegen Eingriffe Dritter, Anrechte dagegen Ansprüche auf Leistungen, die andere erbringen müssen.",
+   "u": "https://www.youtube.com/watch?v=Jkm5MzBCQMw&t=183s",
+   "z": "03:03"
+  }
+ ],
+ "produktionsmittel": [
+  {
+   "ep": "Nr. 48 — Nationalsozialismus",
+   "t": "Das formale Privateigentum im Nationalsozialismus war nur Fiat-Eigentum, weil der Staat über Nutzung und Enteignung entschied.",
+   "u": "https://www.youtube.com/watch?v=8xiOdu_0KO8&t=243s",
+   "z": "04:03"
+  },
+  {
+   "ep": "Nr. 51 — Sharing Economy",
+   "t": "Sharing Economy nutzt ungenutzte Gebrauchsgüter effizienter, sodass mehr Personen dieselbe Gütermenge nutzen und insgesamt weniger produziert werden muss.",
+   "u": "https://www.youtube.com/watch?v=yEtNqFHzdfg&t=62s",
+   "z": "01:02"
+  },
+  {
+   "ep": "Nr. 90 — Eigentum",
+   "t": "Eigentum ist Voraussetzung für Freiheit und Trial-and-Error-Innovation, weil Eigentümer Fehler selbst tragen und daraus lernen.",
+   "u": "https://www.youtube.com/watch?v=BrHabZGu3mA&t=2989s",
+   "z": "49:49"
+  }
+ ],
+ "recht": [
+  {
+   "ep": "Nr. 198 — NAP",
+   "t": "Staatliche Gewalt in Kriegen und politischer Verfolgung übersteigt die Opferzahlen privater Kriminalität; Gewalt wurde verlagert, nicht verringert.",
+   "u": "https://www.youtube.com/watch?v=jgLAQOb7UVY&t=1948s",
+   "z": "32:28"
+  },
+  {
+   "ep": "Nr. 213 — Rechtsprechung",
+   "t": "Statt staatlicher Gesetzgebung soll polyzentrisches Recht gelten, bei dem Kunden die Rechtsanbieter wählen, die ihnen funktional erscheinen.",
+   "u": "https://www.youtube.com/watch?v=gVWN35eCJa0&t=124s",
+   "z": "02:04"
+  },
+  {
+   "ep": "Nr. 14 — Ethik, Recht & Moral",
+   "t": "Im Libertarismus beruht das Recht auf Selbsteigentum, angeeigneter Natur und freiwilligen Übertragungen von Eigentumstiteln, nicht auf Gesetzgebung.",
+   "u": "https://www.youtube.com/watch?v=EXOWcdexu6A&t=131s",
+   "z": "02:11"
+  }
+ ],
+ "reputation": [
+  {
+   "ep": "Nr. 21 — Stigmatisierung",
+   "t": "Stigmatisierung ist gerechtfertigt, wenn ein Verhalten Gemeinschaften gefährdet, Dritte schädigt oder Kosten auf andere abwälzt, also Eigentumsrechte verletzt.",
+   "u": "https://www.youtube.com/watch?v=5uHcG8OjnVE&t=71s",
+   "z": "01:11"
+  },
+  {
+   "ep": "Nr. 75.3 — Selbstbestimmung",
+   "t": "Das Selbstbestimmungsgesetz verletzt Rechte Dritter, weil es Lügen verlangt und die Meinung anderer erzwingen will; das ist Fremdbestimmung aller anderen.",
+   "u": "https://www.youtube.com/watch?v=gQTsdwyqVNg&t=495s",
+   "z": "08:15"
+  },
+  {
+   "ep": "Nr. 113 — Meinungsfreiheit",
+   "t": "Lügen sind moralisch verwerflich, aber Lügner verlieren am Markt und in Gemeinschaften ihr Vertrauen, Vertragsbruch lässt sich gerichtlich regeln.",
+   "u": "https://www.youtube.com/watch?v=ne61VZzVBqk&t=1289s",
+   "z": "21:29"
+  }
+ ],
+ "sanktionierung": [
+  {
+   "ep": "Nr. 163 — Anreize",
+   "t": "Verbote und Strafen wirken nicht zuverlässig, weil der Reiz des Verbotenen und die Abwägung von Kosten die Handlung trotzdem attraktiv machen können.",
+   "u": "https://www.youtube.com/watch?v=58xv5eV2GiE&t=305s",
+   "z": "05:05"
+  },
+  {
+   "ep": "Nr. 144 — Anything goes",
+   "t": "Ein staatliches Gewaltmonopol hat Moral nach Ansicht des Sprechers nie erzwungen und ist anfällig für Machtmissbrauch; dezentrale Kontrolle von Angesicht zu Angesicht wirke nachhaltiger.",
+   "u": "https://www.youtube.com/watch?v=RVBDs6cMeRw&t=187s",
+   "z": "03:07"
+  },
+  {
+   "ep": "Nr. 186 — Individualismus",
+   "t": "Nur handelnde Individuen handeln; Gruppen und Staaten haben kein eigenes Subjekt, deshalb ist methodologischer Individualismus die Grundlage der Analyse.",
+   "u": "https://www.youtube.com/watch?v=J5W3zi7jbVo&t=368s",
+   "z": "06:08"
+  }
+ ],
+ "schiedsgerichte": [
+  {
+   "ep": "Nr. 11.2 — Umgang mit dem Klimawandel",
+   "t": "Konflikte um Umweltschäden sollten über unabhängige private Schiedsgerichte mit Eigentumsrechten geregelt werden, sodass Verschmutzung Geld kostet.",
+   "u": "https://www.youtube.com/watch?v=_x420DuEryg&t=1707s",
+   "z": "28:27"
+  },
+  {
+   "ep": "Nr. 138 — Libertärer Autoritarismus",
+   "t": "Konflikte lassen sich über dezentrale, gemeinsam gewählte Schlichter oder Schiedsgerichte lösen statt über einen zentralen Richter, der selbst Partei ist.",
+   "u": "https://www.youtube.com/watch?v=Gmzv404DzfU&t=432s",
+   "z": "07:12"
+  },
+  {
+   "ep": "Nr. 213 — Rechtsprechung",
+   "t": "Private Schutz- und Schiedsagenturen finden im Wettbewerb bessere Regeln als das heutige Fiatrecht, das von Lobbyisten beeinflusst werden kann.",
+   "u": "https://www.youtube.com/watch?v=gVWN35eCJa0&t=185s",
+   "z": "03:05"
+  }
+ ],
+ "sicherheit": [
+  {
+   "ep": "Nr. 155 — Sicherheit",
+   "t": "Kollektive Sicherheit auf staatlicher Ebene verteilt Kosten um: Rechtschaffene zahlen für Gebiete mit mehr Kriminalität, und je größer der Raum, desto ungenauer die Lösung.",
+   "u": "https://www.youtube.com/watch?v=6uKeB4BvhxY&t=244s",
+   "z": "04:04"
+  },
+  {
+   "ep": "Nr. 198 — NAP",
+   "t": "Staatliche Gewalt in Kriegen und politischer Verfolgung übersteigt die Opferzahlen privater Kriminalität; Gewalt wurde verlagert, nicht verringert.",
+   "u": "https://www.youtube.com/watch?v=jgLAQOb7UVY&t=1948s",
+   "z": "32:28"
+  },
+  {
+   "ep": "Nr. 34 — Drogen",
+   "t": "Die Kostenabwälzung über staatliche Sozial- und Gesundheitssysteme auf die Allgemeinheit sollte durch private Systeme ersetzt werden.",
+   "u": "https://www.youtube.com/watch?v=E6ylqpZl4jk&t=802s",
+   "z": "13:22"
+  }
+ ],
+ "sicherheit-infra": [
+  {
+   "ep": "Nr. 30 — Hierarchien",
+   "t": "Zwangshierarchien, die Eigentumsrechte verletzen, sind schädlich; freiwilliger Beitritt in Unternehmen, Vereine oder Sicherheitsdienste ist dagegen legitim.",
+   "u": "https://www.youtube.com/watch?v=DthNikpJW20&t=1471s",
+   "z": "24:31"
+  }
+ ],
+ "subjektive-wert": [
+  {
+   "ep": "Nr. 7 — Profit [Remake]",
+   "t": "Wert ist subjektiv; der Grenznutzen sinkt mit der Menge eines Gutes, Preisbildung beruht auf subjektiven Werturteilen.",
+   "u": "https://www.youtube.com/watch?v=XvrYWCnp558&t=193s",
+   "z": "03:13"
+  },
+  {
+   "ep": "Nr. 1 — Praxeologie [Remake]",
+   "t": "Mit jeder zusätzlichen Einheit eines Gutes sinkt sein Grenznutzen, und der Wert eines Gutes ist für jede Person subjektiv.",
+   "u": "https://www.youtube.com/watch?v=Im_8bTf3sZc&t=976s",
+   "z": "16:16"
+  },
+  {
+   "ep": "Nr. 108 — Wert",
+   "t": "Mit wachsender Menge eines Gutes sinkt der Grenznutzen des letzten Stücks, bis er im Extremfall auf null fällt.",
+   "u": "https://www.youtube.com/watch?v=PwreAcWkLA4&t=557s",
+   "z": "09:17"
+  }
+ ],
+ "verbannung": [
+  {
+   "ep": "Nr. 61 — Psychopathen",
+   "t": "Zentralisierung erhöht die Wahrscheinlichkeit, dass die Kältesten an die Spitze kommen; dezentrale Strukturen und Austrittsmöglichkeiten wirken dem entgegen.",
+   "u": "https://www.youtube.com/watch?v=TwUlWSL2a-w&t=802s",
+   "z": "13:22"
+  },
+  {
+   "ep": "Nr. 93 — Dummheit",
+   "t": "Eigentumsrechte, Diskriminierung dummen Verhaltens und dezentrale Strukturen begrenzen den Schaden, den dumme Menschen anrichten können.",
+   "u": "https://www.youtube.com/watch?v=bO2xVKC2LRU&t=2200s",
+   "z": "36:40"
+  },
+  {
+   "ep": "Nr. 21 — Stigmatisierung",
+   "t": "Stigmatisierung ist gerechtfertigt, wenn ein Verhalten Gemeinschaften gefährdet, Dritte schädigt oder Kosten auf andere abwälzt, also Eigentumsrechte verletzt.",
+   "u": "https://www.youtube.com/watch?v=5uHcG8OjnVE&t=71s",
+   "z": "01:11"
+  }
+ ],
+ "versicherungen-infra": [
+  {
+   "ep": "Nr. 112 — Katastrophenschutz",
+   "t": "Versicherungen für Elementarschäden schaffen Anreize, Schäden durch Prävention zu verringern, und Versicherer können Hilfe vertraglich regeln.",
+   "u": "https://www.youtube.com/watch?v=dNjY49KRYzw&t=1044s",
+   "z": "17:24"
+  }
+ ],
+ "versicherungen-si": [
+  {
+   "ep": "Nr. 155 — Sicherheit",
+   "t": "Kollektive Sicherheit auf staatlicher Ebene verteilt Kosten um: Rechtschaffene zahlen für Gebiete mit mehr Kriminalität, und je größer der Raum, desto ungenauer die Lösung.",
+   "u": "https://www.youtube.com/watch?v=6uKeB4BvhxY&t=244s",
+   "z": "04:04"
+  }
+ ],
+ "waffenrecht": [
+  {
+   "ep": "Nr. 142 — Anarchotyrannei",
+   "t": "Selbsteigentum und Eigentum anderer sind die Grundpfeiler, deren Verletzung echte Verbrechen darstellt.",
+   "u": "https://www.youtube.com/watch?v=C_-hA73zWSk&t=486s",
+   "z": "08:06"
+  }
+ ],
+ "winkelschulen": [
+  {
+   "ep": "Nr. 19 — Bildung",
+   "t": "Staatliche Schulen wirken nur scheinbar kostenlos, weil sie über Steuern bezahlt werden; Privatschulen sind im Schnitt günstiger.",
+   "u": "https://www.youtube.com/watch?v=kSmDs_IADzg&t=927s",
+   "z": "15:27"
+  },
+  {
+   "ep": "Nr. 122 — Schule",
+   "t": "Vor der Schulpflicht besuchten in den britischen Ballungsgebieten fast alle Kinder freiwillig eine Schule, die Alphabetisierung war hoch.",
+   "u": "https://www.youtube.com/watch?v=0AkpRO9t_vw&t=191s",
+   "z": "03:11"
+  }
+ ]
+};
+
+
+
+
+// ═══════════════════════════════════════════════════════════════
+// GEOMETRIE — flache Waben (flat-top), axiale Koordinaten
+// Keine Physik: Hover verschiebt Nachbarn exakt um den Zuwachs der
+// Wabe, radial nach außen. Dadurch bleiben alle Waben Nachbarn,
+// der Spalt bleibt erhalten und nichts kann überlappen.
+// ═══════════════════════════════════════════════════════════════
+
+const R3 = Math.sqrt(3);
+const GAP = 6;            // Spalt zwischen zwei Waben in px
+const HOVER_SCALE = 1.32; // Wachstum beim Hovern
+const MAX_SIZE = 104;     // max. Gitterradius in px (Desktop)
+const AXIAL_DIRS = [[0,-1],[1,-1],[1,0],[0,1],[-1,1],[-1,0]];
+const canHover = matchMedia('(hover:hover)').matches;
+
+// EXTRAS einmischen, Querverbindungen symmetrisch machen, Eltern merken
+const PARENT = {};
+for (const [id, n] of Object.entries(HIVE.nodes)) (n.children || []).forEach(c => (PARENT[c] = id));
+for (const [id, x] of Object.entries(EXTRAS)) if (HIVE.nodes[id]) Object.assign(HIVE.nodes[id], x);
+for (const [id, x] of Object.entries(OBJECTIONS)) if (HIVE.nodes[id]) HIVE.nodes[id].objections = x.objections;
+for (const [id, x] of Object.entries(LINKS)) if (HIVE.nodes[id]) HIVE.nodes[id].links = x;
+for (const [id, x] of Object.entries(PRAXEOLOG)) if (HIVE.nodes[id]) HIVE.nodes[id].praxeolog = x;
+for (const n of Object.values(HIVE.nodes)) n.related = [];
+for (const [id, rel] of Object.entries(RELATED)) for (const r of rel) {
+  if (!HIVE.nodes[id] || !HIVE.nodes[r]) continue;
+  if (!HIVE.nodes[id].related.includes(r)) HIVE.nodes[id].related.push(r);
+  if (!HIVE.nodes[r].related.includes(id)) HIVE.nodes[r].related.push(id);
+}
+const pathTo = id => { const p = [id]; while (PARENT[p[0]]) p.unshift(PARENT[p[0]]); return p; };
+const nodeColor = id => HIVE.nodes[id].color && !PARENT[PARENT[id]] ? HIVE.nodes[id].color : (HIVE.nodes[PARENT[id]]?.color || 'var(--gold)');
+
+const toUnit = ([q, r]) => ({ x: 1.5 * q, y: R3 * (r + q / 2) });
+
+function ring(k) {
+  const out = [];
+  let q = -k, r = k;
+  for (const [dq, dr] of AXIAL_DIRS) for (let j = 0; j < k; j++) { out.push([q, r]); q += dq; r += dr; }
+  return out;
+}
+
+// Füllt Ringe von innen nach außen. Unvollständige Ringe: zuerst die
+// Plätze nahe am Zentrum (kompakt), gleichmäßig über den Umfang verteilt.
+function slots(count) {
+  const res = [[0, 0]];
+  for (let k = 1; res.length < count; k++) {
+    const groups = {};
+    for (const a of ring(k)) {
+      const u = toUnit(a), key = Math.hypot(u.x, u.y).toFixed(3);
+      (groups[key] ||= []).push({ a, ang: Math.atan2(u.y, u.x) });
+    }
+    for (const key of Object.keys(groups).sort((x, y) => x - y)) {
+      const g = groups[key].sort((x, y) => x.ang - y.ang);
+      const need = count - res.length;
+      if (need <= 0) break;
+      if (need >= g.length) g.forEach(e => res.push(e.a));
+      else {
+        // gleichmäßig verteilen; Drehung wählen, die ausbalanciert und flach liegt
+        let best, bestScore = Infinity;
+        for (let r = 0; r < g.length; r++) {
+          const pick = [...Array(need)].map((_, i) => g[(Math.floor(i * g.length / need) + r) % g.length]);
+          const u = pick.map(e => toUnit(e.a));
+          const score = Math.abs(u.reduce((t, p) => t + p.x, 0)) + Math.abs(u.reduce((t, p) => t + p.y, 0)) + u.reduce((t, p) => t + Math.abs(p.y), 0) * 0.5;
+          if (score < bestScore - 1e-6) { bestScore = score; best = pick; }
+        }
+        best.forEach(e => res.push(e.a));
+      }
+    }
+  }
+  return res;
+}
+
+// Hochformat: Gitter an der Diagonale spiegeln (flat-top → pointy-top)
+const xy = (x, y, pointy) => pointy ? [y, x] : [x, y];
+const hexPoints = (f, pointy) => [[1,0],[.5,R3/2],[-.5,R3/2],[-1,0],[-.5,-R3/2],[.5,-R3/2]]
+  .map(([x, y]) => xy(x * 100 * f, y * 100 * f, pointy).map(v => v.toFixed(2)).join(',')).join(' ');
+
+// ═══════════════════════════════════════════════════════════════
+// STATE & DOM
+// ═══════════════════════════════════════════════════════════════
+
+const honeycomb = document.getElementById('honeycomb');
+const sideContent = document.getElementById('side-content');
+const backBtn = document.getElementById('backBtn');
+const breadcrumb = document.getElementById('breadcrumb');
+const hud = document.getElementById('hud');
+
+let navPath = ["friendly-society"];
+let activeKey = null;
+let hexElements = [];
+let layout = null;        // { size, R, items:[{x,y,nodeId}] }
+let leaveTimer = null;
+
+function computeLayout(ids) {
+  const W = Math.max(240, honeycomb.clientWidth);
+  const H = Math.max(200, honeycomb.clientHeight);
+  const pointy = H > W * 1.1;
+  const units = slots(ids.length).map(toUnit).map(u => pointy ? { x: u.y, y: u.x } : u);
+  const xs = units.map(u => u.x), ys = units.map(u => u.y);
+  // Rand: halbe Wabe + Platz für Hover-Wachstum am Außenrand
+  const pad = canHover ? 1 + (HOVER_SCALE - 1) * 1.2 : 1.05;
+  const [hx, hy] = xy(pad, pad * R3 / 2, pointy);
+  const spanX = Math.max(...xs) - Math.min(...xs) + 2 * hx;
+  const spanY = Math.max(...ys) - Math.min(...ys) + 2 * hy;
+  const size = Math.min(MAX_SIZE, W / spanX, H / spanY);
+  const cx = (Math.max(...xs) + Math.min(...xs)) / 2, cy = (Math.max(...ys) + Math.min(...ys)) / 2;
+  return {
+    size, pointy,
+    R: size - GAP / R3,
+    items: units.map((u, i) => ({ x: W / 2 + (u.x - cx) * size, y: H / 2 + (u.y - cy) * size, nodeId: ids[i] }))
+  };
+}
+
+// ═══════════════════════════════════════════════════════════════
+// WABE ERZEUGEN
+// ═══════════════════════════════════════════════════════════════
+
+// Längstes Wort muss in die Wabe passen (statt hässlicher Silbentrennung)
+const fontSize = (label, w, base, charW = 0.66) => {
+  const longest = Math.max(...label.split(/<br>|\s/).map(t => t.length));
+  return Math.max(7.5, Math.min(base, w * 0.66 / (longest * charW)));
+};
+
+// Unterwaben erben die Farbe ihrer Kategorie → jede Ebene bleibt farblich ruhig
+const hexColor = node => navPath.length > 1 ? HIVE.nodes[navPath[navPath.length - 1]].color : node.color;
+
+function createHex(item, node, i, isCenter) {
+  const { R, pointy } = layout;
+  const [w, h] = xy(2 * R, R3 * R, pointy);
+  const color = hexColor(node);
+  const el = document.createElement('button');
+  const kids = (node.children || []).length;
+  el.className = 'hex' + (isCenter ? ' center' : '') + (activeKey === node.id ? ' active' : '');
+  el.dataset.nodeId = node.id;
+  el.setAttribute('role', 'listitem');
+  el.style.cssText = `left:${item.x}px;top:${item.y}px;width:${w}px;height:${h}px;` +
+    `font-size:${fontSize(node.label, w, isCenter ? Math.max(14, Math.min(24, R * 0.22)) : Math.max(9, Math.min(13.5, R * 0.125)), isCenter ? 0.48 : 0.66)}px;` +
+    (color && !isCenter ? `--c:${color};` : '');
+  const [x1, y1] = xy(-22, -86.6, pointy), [x2, y2] = xy(22, -86.6, pointy);
+  el.innerHTML = `
+    <svg viewBox="${xy(-100, -86.6, pointy).join(' ')} ${xy(200, 173.2, pointy).join(' ')}" aria-hidden="true">
+      <polygon class="fill" points="${hexPoints(1, pointy)}"/>
+      <polygon class="tint" points="${hexPoints(1, pointy)}"/>
+      <polygon class="inner" points="${hexPoints(0.9, pointy)}"/>
+      <polygon class="edge" points="${hexPoints(1, pointy)}"/>
+      ${isCenter ? '' : `<line class="tick" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"/>`}
+    </svg>
+    <span class="hex-text">${node.label}</span>
+    ${kids && !isCenter ? `<span class="hex-meta">${String(kids).padStart(2, '0')} ›</span>`
+      : (!isCenter && node.related.length ? `<span class="hex-meta" title="Querverbindungen"><svg class="link-ico" viewBox="0 0 16 6" aria-hidden="true"><circle cx="3" cy="3" r="2"/><circle cx="13" cy="3" r="2"/><path d="M5 3h6"/></svg>${node.related.length}</span>` : '')}
+  `;
+
+  if (canHover) {
+    el.addEventListener('mouseenter', () => onHover(i));
+    el.addEventListener('mouseleave', onLeave);
+  }
+  el.addEventListener('focus', () => canHover && onHover(i));
+  el.addEventListener('blur', onLeave);
+  el.addEventListener('click', () => {
+    if (kids && !isCenter) navigateTo(node.id);
+    else selectNode(node, true);
+  });
+  return el;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// RENDER
+// ═══════════════════════════════════════════════════════════════
+
+function renderCurrentView(animate = true) {
+  honeycomb.querySelectorAll('.hex').forEach(e => e.remove());
+  honeycomb.classList.remove('has-hover');
+  const currentId = navPath[navPath.length - 1];
+  const node = HIVE.nodes[currentId];
+  if (!node) return;
+  const ids = [currentId, ...(node.children || []).filter(id => HIVE.nodes[id])];
+  layout = computeLayout(ids);
+  const c = layout.items[0];
+
+  hexElements = layout.items.map((item, i) => {
+    const el = createHex(item, HIVE.nodes[item.nodeId], i, i === 0);
+    if (animate && i > 0) {
+      // Kinder entfalten sich aus dem Zentrum
+      el.classList.add('enter');
+      el.style.setProperty('--dx', `${c.x - item.x}px`);
+      el.style.setProperty('--dy', `${c.y - item.y}px`);
+      el.style.setProperty('--s', '.5');
+      el.style.transitionDelay = `${60 + i * 28}ms`;
+    }
+    honeycomb.appendChild(el);
+    return el;
+  });
+
+  if (animate) requestAnimationFrame(() => requestAnimationFrame(() => hexElements.forEach(el => {
+    el.classList.remove('enter');
+    el.style.setProperty('--dx', '0px');
+    el.style.setProperty('--dy', '0px');
+    el.style.setProperty('--s', '1');
+    setTimeout(() => (el.style.transitionDelay = ''), 900);
+  })));
+
+  hud.textContent = `Ebene ${String(navPath.length).padStart(2, '0')} · ${ids.length - 1} Waben`;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// HOVER — Wabe wächst, Nachbarn gleiten radial um genau den Zuwachs
+// ═══════════════════════════════════════════════════════════════
+
+function onHover(idx) {
+  clearTimeout(leaveTimer);
+  if (!layout) return;
+  const h = layout.items[idx];
+  const shift = (HOVER_SCALE - 1) * layout.R * R3 / 2;
+  honeycomb.classList.add('has-hover');
+  const rel = HIVE.nodes[h.nodeId].related;
+  hexElements.forEach((el, i) => {
+    el.classList.toggle('is-hover', i === idx);
+    el.classList.toggle('is-related', rel.includes(el.dataset.nodeId));
+    if (i === idx) { el.style.setProperty('--s', HOVER_SCALE); el.style.setProperty('--dx', '0px'); el.style.setProperty('--dy', '0px'); return; }
+    const it = layout.items[i], dx = it.x - h.x, dy = it.y - h.y, L = Math.hypot(dx, dy) || 1;
+    el.style.setProperty('--s', '1');
+    el.style.setProperty('--dx', `${dx / L * shift}px`);
+    el.style.setProperty('--dy', `${dy / L * shift}px`);
+  });
+}
+
+function onLeave() {
+  clearTimeout(leaveTimer);
+  // kurze Gnadenfrist: Wechsel direkt zur Nachbarwabe ohne Zurückschnappen
+  leaveTimer = setTimeout(() => {
+    honeycomb.classList.remove('has-hover');
+    hexElements.forEach(el => {
+      el.classList.remove('is-hover', 'is-related');
+      el.style.setProperty('--s', '1');
+      el.style.setProperty('--dx', '0px');
+      el.style.setProperty('--dy', '0px');
+    });
+  }, 90);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// NAVIGATION
+// ═══════════════════════════════════════════════════════════════
+
+function transition(fn) {
+  clearTimeout(leaveTimer);
+  hexElements.forEach(el => el.classList.add('out'));
+  setTimeout(() => { fn(); syncChrome(); renderCurrentView(); }, 240);
+}
+
+function syncChrome() {
+  backBtn.classList.toggle('visible', navPath.length > 1);
+  rebuildBreadcrumb();
+  history.replaceState(null, '', '#' + navPath.join('/'));
+}
+
+function navigateTo(nodeId) {
+  if (navPath[navPath.length - 1] === nodeId || !HIVE.nodes[nodeId]) return;
+  const parent = navPath.indexOf(nodeId);
+  transition(() => {
+    navPath = parent >= 0 ? navPath.slice(0, parent + 1) : [...navPath, nodeId];
+    selectNode(HIVE.nodes[nodeId]);
+  });
+}
+
+function goBack() {
+  if (navPath.length <= 1) return;
+  transition(() => { navPath.pop(); selectNode(HIVE.nodes[navPath[navPath.length - 1]]); });
+}
+
+function jumpToPath(index) {
+  if (index >= navPath.length - 1) return;
+  transition(() => { navPath = navPath.slice(0, Math.max(0, index) + 1); selectNode(HIVE.nodes[navPath[navPath.length - 1]]); });
+}
+
+function rebuildBreadcrumb() {
+  breadcrumb.innerHTML = navPath.map((id, i) => {
+    const label = plain(HIVE.nodes[id].label);
+    return (i ? '<span class="sep">/</span>' : '') +
+      `<span class="crumb ${i === navPath.length - 1 ? 'active' : ''}" data-path-index="${i}">${label}</span>`;
+  }).join('');
+  breadcrumb.querySelectorAll('.crumb').forEach(c => c.addEventListener('click', () => jumpToPath(+c.dataset.pathIndex)));
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SEITENPANEL
+// ═══════════════════════════════════════════════════════════════
+
+// Im Wiki eingebettet (site/waben.html) → Link je Wabe auf ihre Wiki-Seite
+const WIKI = document.documentElement.dataset.wiki;
+const plain = s => s.replace(/-<br>(?=\p{Ll})/gu, '').replace(/-<br>/g, '-').replace(/<br>/g, ' ');
+
+function selectNode(node, toggle = false) {
+  if (toggle && activeKey === node.id && navPath[navPath.length - 1] !== node.id) { closeSide(); return; }
+  activeKey = node.id;
+  const kids = (node.children || []).map(id => HIVE.nodes[id]).filter(Boolean);
+  const color = node.color ? `--c:${node.color}` : '';
+
+  sideContent.innerHTML = `
+    <div class="head">
+      <span class="label">${node.id === 'friendly-society' ? 'Übersicht' : (kids.length ? 'Kategorie' : 'Baustein')}</span>
+      <button class="close" id="closeBtn" aria-label="Schließen">×</button>
+    </div>
+    <div class="body" style="${color}">
+      <h2>${plain(node.label)}</h2>
+      ${WIKI ? `<a class="wiki-link" href="${WIKI}${node.id}.html">Wiki-Seite öffnen →</a>` : ''}
+      ${node.subtitle ? `<div class="sub">${node.subtitle}</div>` : ''}
+      <p class="desc">${node.desc || ''}</p>
+      <div class="meta">
+        <div><div class="k">Reichweite</div><div class="v">${node.meta?.Reichweite || '—'}</div></div>
+        <div><div class="k">Trägerschaft</div><div class="v">${node.meta?.Trägerschaft || '—'}</div></div>
+      </div>
+      ${node.examples?.length ? `
+      <div class="section">
+        <div class="k">Belege &amp; Beispiele</div>
+        <ul class="examples">${node.examples.map(e => `<li>${e}</li>`).join('')}</ul>
+      </div>` : ''}
+      ${node.objections?.length ? `
+      <div class="section">
+        <div class="k">Einwand &amp; Antwort</div>
+        ${node.objections.map(o => `<div class="objection"><div class="q">${o.q}</div><div class="a">${o.a}</div></div>`).join('')}
+      </div>` : ''}
+      ${node.praxeolog?.length ? `
+      <div class="section">
+        <div class="k">Aus dem Praxeolog Podcast</div>
+        ${node.praxeolog.map(p => `<a class="prax" href="${p.u}" target="_blank" rel="noopener"><span class="prax-t">${p.t}</span><span class="prax-ep">${p.ep} · ${p.z} ▶</span></a>`).join('')}
+      </div>` : ''}
+      ${node.related.length ? `
+      <div class="section">
+        <div class="k">Querverbindungen</div>
+        ${node.related.map(id => `<span class="child-tag" style="--c:${nodeColor(id)}" data-jump-id="${id}">${plain(HIVE.nodes[id].label)} <small>${PARENT[id] ? plain(HIVE.nodes[PARENT[id]].label) : ''}</small></span>`).join('')}
+      </div>` : ''}
+      ${kids.length ? `
+      <div class="children-list">
+        <div class="k">Verbundene Waben · ${kids.length}</div>
+        ${kids.map(k => `<span class="child-tag" style="--c:${(node.id === 'friendly-society' ? k.color : node.color) || 'var(--gold)'}" data-child-id="${k.id}">${plain(k.label)}</span>`).join('')}
+      </div>` : ''}
+      ${node.links?.length ? `
+      <div class="section">
+        <div class="k">Weiterlesen &amp; Videos</div>
+        <ul class="links">${node.links.map(l => `<li><a href="${l.u}" target="_blank" rel="noopener"><span>${l.kind || 'Link'}</span>${l.t}</a></li>`).join('')}</ul>
+      </div>` : ''}
+      ${node.sources?.length ? `
+      <div class="section">
+        <div class="k">Quellen</div>
+        <ul class="sources">${node.sources.map(x => `<li>${x.u ? `<a href="${x.u}" target="_blank" rel="noopener">${x.t}</a>` : x.t}</li>`).join('')}</ul>
+      </div>` : ''}
+    </div>
+  `;
+
+  sideContent.querySelectorAll('[data-jump-id]').forEach(tag => tag.addEventListener('click', () => goToNode(tag.dataset.jumpId)));
+  sideContent.querySelectorAll('.child-tag[data-child-id]').forEach(tag => tag.addEventListener('click', () => {
+    const child = HIVE.nodes[tag.dataset.childId];
+    if (child.children?.length) navigateTo(child.id);
+    else selectNode(child);
+  }));
+  document.getElementById('closeBtn').addEventListener('click', closeSide);
+  hexElements.forEach(el => el.classList.toggle('active', el.dataset.nodeId === node.id));
+  document.getElementById('side').classList.add('open');
+}
+
+function closeSide() {
+  activeKey = null;
+  hexElements.forEach(el => el.classList.remove('active'));
+  sideContent.innerHTML = `
+    <div class="empty">
+      <svg viewBox="0 0 24 24"><polygon points="2,12 7,3.3 17,3.3 22,12 17,20.7 7,20.7"/></svg>
+      <p>Wähle eine Wabe, um Details zu sehen.</p>
+    </div>
+  `;
+  document.getElementById('side').classList.remove('open');
+}
+
+// Springt zu einer beliebigen Wabe: Kategorien werden geöffnet,
+// Blätter in ihrer Elternebene markiert.
+function goToNode(id) {
+  const node = HIVE.nodes[id];
+  if (!node) return;
+  const full = pathTo(id);
+  const path = node.children?.length ? full : full.slice(0, -1);
+  const flash = () => hexElements.find(el => el.dataset.nodeId === id)?.classList.add('flash');
+  if (path.join('/') === navPath.join('/')) { selectNode(node); flash(); return; }
+  transition(() => { navPath = path; selectNode(node); });
+  setTimeout(flash, 320);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SUCHE
+// ═══════════════════════════════════════════════════════════════
+
+const searchBox = document.getElementById('search');
+const searchInput = document.getElementById('searchInput');
+const searchResults = document.getElementById('searchResults');
+let hits = [], sel = 0;
+
+const norm = s => s.replace(/<br>/g, ' ').replace(/-\s+/g, '').toLowerCase()
+  .replace(/ä/g, 'ae').replace(/ö/g, 'oe').replace(/ü/g, 'ue').replace(/ß/g, 'ss');
+const esc = s => s.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+// Markiert den Treffer im Originaltext (Umlaut-tolerant über Zeichen-Mapping)
+function mark(text, q) {
+  const map = [], flat = [];
+  [...text].forEach((ch, i) => { for (const c of norm(ch)) { flat.push(c); map.push(i); } });
+  const at = flat.join('').indexOf(q);
+  if (at < 0 || !q) return esc(text);
+  const a = map[at], b = map[at + q.length - 1] + 1;
+  return esc(text.slice(0, a)) + '<mark>' + esc(text.slice(a, b)) + '</mark>' + esc(text.slice(b));
+}
+
+function snippet(text, q) {
+  const i = norm(text).indexOf(q);
+  if (i < 0) return '';
+  const a = Math.max(0, i - 30);
+  return (a ? '… ' : '') + mark(text.slice(a, a + 110), q);
+}
+
+function search(raw) {
+  const q = norm(raw.trim());
+  searchBox.classList.toggle('has-q', !!raw);
+  if (!q) return closeSearch();
+  hits = Object.values(HIVE.nodes).map(n => {
+    const label = norm(n.label), extra = [n.subtitle, n.desc, ...(n.examples || []), ...(n.objections || []).flatMap(o => [o.q, o.a])].filter(Boolean).join(' ');
+    const score = label.startsWith(q) ? 0 : label.split(/[\s/]+/).some(w => w.startsWith(q)) ? 1
+      : label.includes(q) ? 2 : norm(n.subtitle || '').includes(q) ? 3 : norm(extra).includes(q) ? 4 : -1;
+    return { n, score, extra };
+  }).filter(h => h.score >= 0).sort((a, b) => a.score - b.score || pathTo(a.n.id).length - pathTo(b.n.id).length).slice(0, 8);
+  sel = 0;
+  searchResults.innerHTML = hits.length ? hits.map((h, i) => `
+    <li role="option" data-i="${i}" class="${i ? '' : 'sel'}" style="--c:${nodeColor(h.n.id)}">
+      <span class="r-label">${mark(plain(h.n.label), q)}</span>
+      <span class="r-path">${pathTo(h.n.id).slice(1, -1).map(id => plain(HIVE.nodes[id].label)).join(' / ') || 'Übersicht'}</span>
+      ${h.score >= 3 ? `<span class="r-hit">${snippet(h.extra, q)}</span>` : ''}
+    </li>`).join('') : `<li class="r-empty">Keine Wabe gefunden.</li>`;
+  searchResults.querySelectorAll('li[data-i]').forEach(li => {
+    li.addEventListener('mousedown', e => { e.preventDefault(); pick(+li.dataset.i); });
+    li.addEventListener('mousemove', () => highlight(+li.dataset.i));
+  });
+  searchBox.classList.add('open');
+  searchInput.setAttribute('aria-expanded', 'true');
+}
+
+function highlight(i) {
+  sel = (i + hits.length) % hits.length;
+  searchResults.querySelectorAll('li[data-i]').forEach(li => li.classList.toggle('sel', +li.dataset.i === sel));
+  searchResults.querySelector('.sel')?.scrollIntoView({ block: 'nearest' });
+}
+
+function pick(i) {
+  const h = hits[i];
+  if (!h) return;
+  searchInput.value = '';
+  searchBox.classList.remove('has-q');
+  closeSearch();
+  searchInput.blur();
+  goToNode(h.n.id);
+}
+
+function closeSearch() {
+  searchBox.classList.remove('open');
+  searchInput.setAttribute('aria-expanded', 'false');
+}
+
+searchInput.addEventListener('input', () => search(searchInput.value));
+searchInput.addEventListener('focus', () => searchInput.value && search(searchInput.value));
+searchInput.addEventListener('blur', () => setTimeout(closeSearch, 120));
+searchInput.addEventListener('keydown', e => {
+  if (e.key === 'ArrowDown' && hits.length) { e.preventDefault(); highlight(sel + 1); }
+  else if (e.key === 'ArrowUp' && hits.length) { e.preventDefault(); highlight(sel - 1); }
+  else if (e.key === 'Enter') { e.preventDefault(); pick(sel); }
+  else if (e.key === 'Escape') { e.stopPropagation(); searchInput.value ? (searchInput.value = '', search('')) : searchInput.blur(); }
+});
+document.getElementById('searchClear').addEventListener('click', () => { searchInput.value = ''; search(''); searchInput.focus(); });
+document.addEventListener('keydown', e => {
+  const typing = /input|textarea/i.test(document.activeElement?.tagName);
+  if ((e.key === 'k' && (e.metaKey || e.ctrlKey)) || (e.key === '/' && !typing)) { e.preventDefault(); searchInput.focus(); searchInput.select(); }
+});
+
+// ═══════════════════════════════════════════════════════════════
+// PFEILTASTEN — springt zur nächsten Wabe in Pfeilrichtung
+// ═══════════════════════════════════════════════════════════════
+
+const ARROWS = { ArrowRight: [1, 0], ArrowLeft: [-1, 0], ArrowDown: [0, 1], ArrowUp: [0, -1] };
+
+function arrowMove(key) {
+  if (!layout) return;
+  const f = hexElements.indexOf(document.activeElement);
+  const cur = Math.max(0, f >= 0 ? f : hexElements.findIndex(el => el.classList.contains('active')));
+  const [vx, vy] = ARROWS[key], a = layout.items[cur];
+  let best = -1, bestScore = Infinity;
+  layout.items.forEach((b, i) => {
+    const dx = b.x - a.x, dy = b.y - a.y, d = Math.hypot(dx, dy), cos = (dx * vx + dy * vy) / d;
+    if (i === cur || cos < 0.45) return;   // ±63° Kegel
+    const score = d * (2 - cos);
+    if (score < bestScore) { bestScore = score; best = i; }
+  });
+  if (best >= 0) hexElements[best].focus();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// EXPORT — aktuelle Ebene als PNG (1080 × 1350, Social-Media-Format)
+// ═══════════════════════════════════════════════════════════════
+
+async function exportPNG() {
+  await document.fonts.ready;
+  const W = 1080, H = 1350, cv = document.createElement('canvas');
+  cv.width = W; cv.height = H;
+  const g = cv.getContext('2d'), css = getComputedStyle(document.documentElement);
+  const v = n => css.getPropertyValue(n).trim();
+  const id = navPath[navPath.length - 1], node = HIVE.nodes[id];
+  const ids = [id, ...(node.children || []).filter(c => HIVE.nodes[c])];
+
+  g.fillStyle = v('--bg'); g.fillRect(0, 0, W, H);
+  const glow = g.createRadialGradient(W / 2, 760, 0, W / 2, 760, 620);
+  glow.addColorStop(0, 'rgba(212,176,98,.10)'); glow.addColorStop(1, 'rgba(212,176,98,0)');
+  g.fillStyle = glow; g.fillRect(0, 0, W, H);
+
+  // Kopf
+  g.fillStyle = v('--gold'); g.font = `500 20px ${v('--font-mono')}`; g.letterSpacing = '6px';
+  g.fillText('ALTERNATIVE ZUM SOZIALSTAAT · LIBERTÄR', 72, 104);
+  g.letterSpacing = '0px'; g.fillStyle = v('--ink'); g.font = `600 84px ${v('--font-display')}`;
+  g.fillText(plain(node.label), 72, 196);
+  if (node.subtitle) { g.fillStyle = v('--gold'); g.font = `italic 500 38px ${v('--font-display')}`; g.fillText(node.subtitle, 72, 250); }
+
+  // Waben
+  const units = slots(ids.length).map(toUnit);
+  const xs = units.map(u => u.x), ys = units.map(u => u.y);
+  const size = Math.min(150, 940 / (Math.max(...xs) - Math.min(...xs) + 2.1), 880 / (Math.max(...ys) - Math.min(...ys) + R3 * 1.05));
+  const cx = (Math.max(...xs) + Math.min(...xs)) / 2, cy = (Math.max(...ys) + Math.min(...ys)) / 2;
+  const R = size - GAP * 1.5 / R3;
+  const hexPath = (x, y, r) => { g.beginPath(); for (let k = 0; k < 6; k++) g.lineTo(x + r * Math.cos(k * Math.PI / 3), y + r * Math.sin(k * Math.PI / 3)); g.closePath(); };
+  units.forEach((u, i) => {
+    const n = HIVE.nodes[ids[i]], x = W / 2 + (u.x - cx) * size, y = 760 + (u.y - cy) * size;
+    const col = i ? (navPath.length > 1 ? node.color : n.color) || v('--gold') : v('--gold');
+    const grad = g.createLinearGradient(0, y - R, 0, y + R); grad.addColorStop(0, '#17161a'); grad.addColorStop(1, '#0c0c0e');
+    hexPath(x, y, R); g.fillStyle = grad; g.fill();
+    g.globalAlpha = i ? .07 : .1; g.fillStyle = col; g.fill(); g.globalAlpha = i ? .55 : .9;
+    g.strokeStyle = col; g.lineWidth = 1.5; g.stroke(); g.globalAlpha = 1;
+    if (!i) { hexPath(x, y, R * .9); g.globalAlpha = .4; g.stroke(); g.globalAlpha = 1; }
+    else { g.lineWidth = 3; g.beginPath(); g.moveTo(x - R * .22, y - R * R3 / 2); g.lineTo(x + R * .22, y - R * R3 / 2); g.stroke(); }
+    const lines = i ? n.label.split('<br>').map(t => t.toUpperCase()) : n.label.split('<br>');
+    const longest = Math.max(...lines.join(' ').split(/\s/).map(t => t.length));
+    const fs = Math.min(i ? R * .16 : R * .26, R * 1.3 / (longest * (i ? .62 : .48)));
+    g.font = i ? `600 ${fs}px ${v('--font-body')}` : `600 ${fs}px ${v('--font-display')}`;
+    g.letterSpacing = i ? `${fs * .06}px` : '0px';
+    g.fillStyle = v('--ink'); g.textAlign = 'center'; g.textBaseline = 'middle';
+    lines.forEach((t, k) => g.fillText(t.trim(), x, y + (k - (lines.length - 1) / 2) * fs * 1.25));
+    g.textAlign = 'left'; g.textBaseline = 'alphabetic'; g.letterSpacing = '0px';
+  });
+
+  // Fuß mit Ancap-Marke
+  g.strokeStyle = 'rgba(212,176,98,.25)'; g.lineWidth = 1; g.beginPath(); g.moveTo(72, H - 110); g.lineTo(W - 72, H - 110); g.stroke();
+  g.fillStyle = v('--gold'); g.fillRect(72, H - 78, 26, 26);
+  g.fillStyle = '#000'; g.beginPath(); g.moveTo(98, H - 78); g.lineTo(98, H - 52); g.lineTo(72, H - 52); g.closePath(); g.fill();
+  g.strokeStyle = v('--gold'); g.strokeRect(72, H - 78, 26, 26);
+  g.fillStyle = v('--ink-2'); g.font = `500 20px ${v('--font-mono')}`; g.letterSpacing = '4px';
+  g.fillText('FRIENDLY SOCIETY', 118, H - 58);
+  g.textAlign = 'right'; g.fillStyle = v('--muted');
+  g.fillText(navPath.map(i => plain(HIVE.nodes[i].label)).join(' / ').toUpperCase(), W - 72, H - 58);
+
+  const a = document.createElement('a');
+  a.download = `waben-${navPath.join('-')}.png`;
+  a.href = cv.toDataURL('image/png');
+  a.click();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// EVENTS & INIT
+// ═══════════════════════════════════════════════════════════════
+
+backBtn.addEventListener('click', goBack);
+
+document.addEventListener('keydown', e => {
+  if (document.activeElement === searchInput) return;
+  if (e.key === 'Escape') navPath.length > 1 ? goBack() : closeSide();
+  else if (ARROWS[e.key]) { e.preventDefault(); arrowMove(e.key); }
+  else if (e.key === 'Backspace' && navPath.length > 1) goBack();
+});
+document.getElementById('exportBtn').addEventListener('click', exportPNG);
+window.addEventListener('hashchange', () => {
+  const id = decodeURIComponent(location.hash.slice(1)).split('/').pop();
+  if (id && id !== navPath[navPath.length - 1]) goToNode(id);
+});
+
+let resizeTimer;
+window.addEventListener('resize', () => {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(() => renderCurrentView(false), 150);
+});
+
+// Deep-Link: #friendly-society/bildung/winkelschulen
+const fromHash = decodeURIComponent(location.hash.slice(1)).split('/').filter(id => HIVE.nodes[id]);
+if (fromHash[0] === 'friendly-society') navPath = fromHash.filter((id, i) => !i || HIVE.nodes[fromHash[i - 1]].children?.includes(id));
+
+syncChrome();
+renderCurrentView();
+selectNode(HIVE.nodes[navPath[navPath.length - 1]]);
+if (window.innerWidth <= 960) closeSide();
+</script>
+</body>
+</html>
